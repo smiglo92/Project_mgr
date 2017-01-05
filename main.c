@@ -1,51 +1,21 @@
-#include <stdint.h>
-#include <stdbool.h>
-#include "inc/hw_gpio.h"
-#include "inc/hw_types.h"
-#include "inc/hw_ints.h"
-#include "inc/hw_memmap.h"
-#include "driverlib/debug.h"
-#include "driverlib/fpu.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/pin_map.h"
-#include "driverlib/gpio.h"
-#include "driverlib/pwm.h"
-#include "driverlib/qei.h"
-#include "driverlib/uart.h"
-#include "driverlib/adc.h"
-#include "driverlib/timer.h"
-#include "driverlib/interrupt.h"
-#include "utils/uartstdio.h"
-#include "mb_LED.h"
-#include "mb_Motor.h"
-#include "interrupts.h"
-#include "utils/uartstdio.c"
-#include <string.h>
-#include <math.h>
-#include "arm_math.h"
 
+#include "main.h"
 
 extern void ADC0_Handler(void);
 extern void ADC1_Handler(void);
-
 extern void PortAIntHandler(void);
 extern void PortBIntHandler(void);
 extern void PortCIntHandler(void);
 extern void PortDIntHandler(void);
 extern void PortFIntHandler(void);
-
 extern void PWM0LoadIntHandler(void);
+extern void PWM1LoadIntHandler(void);
 extern void Timer0IntHandler(void);
 
 void initExternalInterrupts(void);
 
-void delayMS(int ms)
-{
-	SysCtlDelay( (SysCtlClockGet() / (3 * 1000)) * ms);
-}
-
-uint32_t adc0_value[1];
-uint32_t adc1_value[1];
+uint32_t adc0_value[2];
+uint32_t adc1_value[2];
 
 MbMotorStruct motor1Struct, motor2Struct;
 
@@ -57,10 +27,6 @@ volatile uint8_t motor1VelocityPidIterator = 0, motor2VelocityPidIterator = 10;
 
 volatile uint8_t isMotor1Synchronization = 0, isMotor2Synchronization = 0;
 
-volatile uint32_t synchro1, synchro2;
-
-uint32_t licznik;
-
 //TODO - SYNCHRONIZACJA
 
 arm_pid_instance_q31 motor1CurrentPid, motor2CurrentPid;
@@ -69,26 +35,6 @@ arm_pid_instance_q31 motor1VelocityPid, motor2VelocityPid;
 
 int main()
 {
-	//Set current PID variables
-	/////////////////////////////////////////////////////////////////////////////////////
-	motor1Struct.currentPid.kp = 4000;
-	motor1Struct.currentPid.ti = 400000;
-	motor1Struct.currentPid.td = 0;
-
-	motor2Struct.currentPid.kp = 0;
-	motor2Struct.currentPid.ti = 400000;
-	motor2Struct.currentPid.td = 0;
-
-	//Set velocity PID variables
-	/////////////////////////////////////////////////////////////////////////////////////
-	motor1Struct.velocityPid.kp = 0;
-	motor1Struct.velocityPid.ti = 40000;
-	motor1Struct.velocityPid.td = 0;
-
-	motor2Struct.velocityPid.kp = 0;
-	motor2Struct.velocityPid.ti = 4000;
-	motor2Struct.velocityPid.td = 0;
-
 	//Set the system clock to 80Mhz
 	/////////////////////////////////////////////////////////////////////////////////////
 	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
@@ -100,6 +46,9 @@ int main()
 	IntRegister(INT_PWM0_2_TM4C123, PWM0LoadIntHandler);
 	IntEnable(INT_PWM0_2_TM4C123);
 
+	IntRegister(INT_PWM1_0_TM4C123, PWM1LoadIntHandler);
+	IntEnable(INT_PWM1_0_TM4C123);
+
 	mb_Motor_Init(MOTOR1);
 	mb_Motor_Init(MOTOR2);
 
@@ -108,6 +57,12 @@ int main()
 	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, PWM0LoadIntHandler);
 	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
 	PWMIntEnable(PWM0_BASE, PWM_INT_GEN_2);
+
+	PWMGenIntTrigDisable(PWM1_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+	PWMGenIntClear(PWM1_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM1_BASE, PWM_GEN_0, PWM1LoadIntHandler);
+	PWMGenIntTrigEnable(PWM1_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+	PWMIntEnable(PWM1_BASE, PWM_INT_GEN_0);
 
 	mb_LED_Init(LED1);
 	mb_LED_Init(LED2);
@@ -121,16 +76,18 @@ int main()
 	mb_LED_On(LED1);
 	mb_LED_On(LED2);
 
-//	IntRegister(INT_GPIOA_TM4C123, PortAIntHandler);
-//	IntEnable(INT_GPIOA_TM4C123);
-//	IntRegister(INT_GPIOB_TM4C123, PortBIntHandler);
-//	IntEnable(INT_GPIOB_TM4C123);
-//	IntRegister(INT_GPIOC_TM4C123, PortCIntHandler);
-//	IntEnable(INT_GPIOC_TM4C123);
-//	IntRegister(INT_GPIOD_TM4C123, PortDIntHandler);
-//	IntEnable(INT_GPIOD_TM4C123);
-//	IntRegister(INT_GPIOF_TM4C123, PortFIntHandler);
-//	IntEnable(INT_GPIOF_TM4C123);
+	mb_PID_init();
+
+	IntRegister(INT_GPIOA_TM4C123, PortAIntHandler);
+	IntEnable(INT_GPIOA_TM4C123);
+	IntRegister(INT_GPIOB_TM4C123, PortBIntHandler);
+	IntEnable(INT_GPIOB_TM4C123);
+	IntRegister(INT_GPIOC_TM4C123, PortCIntHandler);
+	IntEnable(INT_GPIOC_TM4C123);
+	IntRegister(INT_GPIOD_TM4C123, PortDIntHandler);
+	IntEnable(INT_GPIOD_TM4C123);
+	IntRegister(INT_GPIOF_TM4C123, PortFIntHandler);
+	IntEnable(INT_GPIOF_TM4C123);
 
 	initExternalInterrupts();
 
@@ -146,14 +103,14 @@ int main()
 	ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PWM_MOD1 | ADC_TRIGGER_PWM0, 1);
 	ADCSequenceConfigure(ADC1_BASE, 0, ADC_TRIGGER_PWM_MOD0 | ADC_TRIGGER_PWM2, 0);
 
-	ADCHardwareOversampleConfigure(ADC0_BASE, 64);
-	ADCHardwareOversampleConfigure(ADC1_BASE, 64);
+	ADCHardwareOversampleConfigure(ADC0_BASE, 0);
+	ADCHardwareOversampleConfigure(ADC1_BASE, 0);
 
-	ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0|ADC_CTL_IE|ADC_CTL_END);
-//	ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH2|ADC_CTL_IE|ADC_CTL_END);
+	ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0);
+	ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH2|ADC_CTL_IE|ADC_CTL_END);
 
-	ADCSequenceStepConfigure(ADC1_BASE, 0, 0, ADC_CTL_CH1|ADC_CTL_IE|ADC_CTL_END);
-//	ADCSequenceStepConfigure(ADC1_BASE, 0, 1, ADC_CTL_TS|ADC_CTL_IE|ADC_CTL_END);
+	ADCSequenceStepConfigure(ADC1_BASE, 0, 0, ADC_CTL_CH1);
+	ADCSequenceStepConfigure(ADC1_BASE, 0, 1, ADC_CTL_TS|ADC_CTL_IE|ADC_CTL_END);
 
 	ADCSequenceEnable(ADC0_BASE, 0);
 	ADCSequenceEnable(ADC1_BASE, 0);
@@ -259,7 +216,7 @@ int main()
 	arm_pid_init_q31(&motor1CurrentPid, 1);
 
 	motor1CurrentPid.state[2] = 100;
-	motor1Struct.currentTarget = 170;
+	motor1Struct.currentTarget = 80;
 	motor1Struct.pwmInput = 100;
 	motor1Struct.currentError = 0;
 
@@ -281,7 +238,7 @@ int main()
 	arm_pid_init_q31(&motor1VelocityPid, 1);
 
 	motor1VelocityPid.state[2] = 0;
-	motor1Struct.velocityTarget = 100;
+	motor1Struct.velocityTarget = 500;
 	motor1Struct.velocityError = 0;
 
 	motor2VelocityPid.Kp = motor2Struct.velocityPid.kp;
@@ -298,110 +255,112 @@ int main()
 	{
 
 
-//		if(isPid2Switch)
-//		{
-//			licznik = TimerValueGet(TIMER0_BASE, TIMER_A);
-//
-//
-//			if (motor2VelocityPidIterator == 0 && isMotor2Synchronization)
-//			{
-//				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) * (QEIDirectionGet(QEI1_BASE));
-//				motor2Struct.velocityError = (motor2Struct.velocityTarget - motor2Struct.velocity) << 10;
-//
-//				motor2Struct.currentTarget2 = arm_pid_q31(&motor2VelocityPid, motor2Struct.velocityError);
-//
-//				if(motor2Struct.currentTarget2 > 150)
-//				{
-//					motor2Struct.currentTarget2 = 150;
-//					motor2VelocityPid.state[2] = 150;
-//				}
-//				if(motor2Struct.currentTarget2 < -150)
-//				{
-//					motor2Struct.currentTarget2 = -150;
-//					motor2VelocityPid.state[2] = -150;
-//				}
-//			}
-//
-//			//Zrobiæ sprawdzanie zadanego pr¹du który bêdzie przychodzi³ z komputera
-//
-//			if (isMotor2Synchronization)
-//				motor2Struct.currentError = (motor2Struct.currentTarget2 - motor2Struct.current) << 10;
-//			else
-//				motor2Struct.currentError = (motor2Struct.currentTarget - motor2Struct.current) << 10;
-//
-//			motor2Struct.pwmInput = arm_pid_q31(&motor2CurrentPid, motor2Struct.currentError);
-//
-//			if(motor2Struct.pwmInput > 2000)
-//			{
-//				motor2Struct.pwmInput = 2000;
-//				motor2CurrentPid.state[2] = 2000;
-//			}
-//			if(motor2Struct.pwmInput < -2000)
-//			{
-//				motor2Struct.pwmInput = -2000;
-//				motor2CurrentPid.state[2] = -2000;
-//			}
-//
-//			mb_Motor_Set_Pulse_Width(MOTOR2, motor2Struct.pwmInput);
-//
-//			motor2Struct.position = QEIPositionGet(QEI1_BASE);
-//
-//			motor2VelocityPidIterator++;
-//			if(motor2VelocityPidIterator == 19) motor2VelocityPidIterator = 0;
-//
-//			isPid2Switch = 0;
-//		}
-//
-//		if(isPid1Switch)
-//		{
+		if(isPid2Switch)
+		{
 //			mb_LED_Switch(LED1);
-//
-//			if (motor1VelocityPidIterator == 0 && isMotor1Synchronization)
-//			{
-//				motor1Struct.velocity = (QEIVelocityGet(QEI0_BASE) * 30) * (QEIDirectionGet(QEI0_BASE));
-//				motor1Struct.velocityError = (motor1Struct.velocityTarget - motor1Struct.velocity) << 10;
-//
-//				motor1Struct.currentTarget2 = arm_pid_q31(&motor1VelocityPid, motor1Struct.velocityError);
-//
-//				if(motor1Struct.currentTarget2 > 200)
-//				{
-//					motor1Struct.currentTarget2 = 200;
-//					motor1VelocityPid.state[2] = 200;
-//				}
-//				if(motor1Struct.currentTarget2 < -200)
-//				{
-//					motor1Struct.currentTarget2 = -200;
-//					motor1VelocityPid.state[2] = -200;
-//				}
-//			}
-//
-//			if (isMotor1Synchronization)
-//				motor1Struct.currentError = (motor1Struct.currentTarget2 - motor1Struct.current) << 10;
-//			else
-//				motor1Struct.currentError = (motor1Struct.currentTarget - motor1Struct.current) << 10;
-//
-//			motor1Struct.pwmInput = arm_pid_q31(&motor1CurrentPid, motor1Struct.currentError);
-//
-//			if(motor1Struct.pwmInput > 1000)
-//			{
-//				motor1Struct.pwmInput = 1000;
-//				motor1CurrentPid.state[2] = 1000;
-//			}
-//			if(motor1Struct.pwmInput < -1000)
-//			{
-//				motor1Struct.pwmInput = -1000;
-//				motor1CurrentPid.state[2] = -1000;
-//			}
-//
-//			mb_Motor_Set_Pulse_Width(MOTOR1, motor1Struct.pwmInput);
-//
-//			motor1Struct.position = QEIPositionGet(QEI0_BASE);
-//
-//			motor1VelocityPidIterator++;
-//			if(motor1VelocityPidIterator == 19) motor1VelocityPidIterator = 0;
-//
-//			isPid1Switch = 0;
-//		}
+
+			if (motor2VelocityPidIterator == 0 && isMotor2Synchronization)
+			{
+				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) * (QEIDirectionGet(QEI1_BASE));
+				motor2Struct.velocityError = (motor2Struct.velocityTarget - motor2Struct.velocity) << 10;
+
+				motor2Struct.currentTarget2 = arm_pid_q31(&motor2VelocityPid, motor2Struct.velocityError);
+
+				if(motor2Struct.currentTarget2 > 150)
+				{
+					motor2Struct.currentTarget2 = 150;
+					motor2VelocityPid.state[2] = 150;
+				}
+				if(motor2Struct.currentTarget2 < -150)
+				{
+					motor2Struct.currentTarget2 = -150;
+					motor2VelocityPid.state[2] = -150;
+				}
+			}
+
+//			Zrobiæ sprawdzanie zadanego pr¹du który bêdzie przychodzi³ z komputera
+
+			if (isMotor2Synchronization)
+				motor2Struct.currentError = (motor2Struct.currentTarget2 - motor2Struct.current) << 10;
+			else
+				motor2Struct.currentError = (motor2Struct.currentTarget - motor2Struct.current) << 10;
+
+			motor2Struct.pwmInput = arm_pid_q31(&motor2CurrentPid, motor2Struct.currentError);
+
+			if(motor2Struct.pwmInput > 2000)
+			{
+				motor2Struct.pwmInput = 2000;
+				motor2CurrentPid.state[2] = 2000;
+			}
+			if(motor2Struct.pwmInput < -2000)
+			{
+				motor2Struct.pwmInput = -2000;
+				motor2CurrentPid.state[2] = -2000;
+			}
+
+			mb_Motor_Set_Pulse_Width(MOTOR2, motor2Struct.pwmInput);
+
+			motor2Struct.position = QEIPositionGet(QEI1_BASE);
+
+			motor2VelocityPidIterator++;
+			if(motor2VelocityPidIterator == 19) motor2VelocityPidIterator = 0;
+
+			isPid2Switch = 0;
+			mb_LED_Off(LED1);
+		}
+
+		if(isPid1Switch)
+		{
+//			mb_LED_Switch(LED1);
+
+			if (motor1VelocityPidIterator == 0 && isMotor1Synchronization)
+			{
+				motor1Struct.velocity = (QEIVelocityGet(QEI0_BASE) * 30) * (QEIDirectionGet(QEI0_BASE));
+				motor1Struct.velocityError = (motor1Struct.velocityTarget - motor1Struct.velocity) << 10;
+
+				motor1Struct.currentTarget2 = arm_pid_q31(&motor1VelocityPid, motor1Struct.velocityError);
+
+				if(motor1Struct.currentTarget2 > 200)
+				{
+					motor1Struct.currentTarget2 = 200;
+					motor1VelocityPid.state[2] = 200;
+				}
+				if(motor1Struct.currentTarget2 < -200)
+				{
+					motor1Struct.currentTarget2 = -200;
+					motor1VelocityPid.state[2] = -200;
+				}
+			}
+
+			if (isMotor1Synchronization)
+				motor1Struct.currentError = (motor1Struct.currentTarget2 - motor1Struct.current) << 10;
+			else
+				motor1Struct.currentError = (motor1Struct.currentTarget - motor1Struct.current) << 10;
+
+			motor1Struct.pwmInput = arm_pid_q31(&motor1CurrentPid, motor1Struct.currentError);
+
+			if(motor1Struct.pwmInput > 1000)
+			{
+				motor1Struct.pwmInput = 1000;
+				motor1CurrentPid.state[2] = 1000;
+			}
+			if(motor1Struct.pwmInput < -1000)
+			{
+				motor1Struct.pwmInput = -1000;
+				motor1CurrentPid.state[2] = -1000;
+			}
+
+			mb_Motor_Set_Pulse_Width(MOTOR1, motor1Struct.pwmInput);
+
+			motor1Struct.position = QEIPositionGet(QEI0_BASE);
+
+			motor1VelocityPidIterator++;
+			if(motor1VelocityPidIterator == 19) motor1VelocityPidIterator = 0;
+
+			isPid1Switch = 0;
+			mb_LED_Off(LED1);
+//			isTerminalSend = 1;
+		}
 
 //        UARTprintf("AIN0 = %4d\t", motor1Current);
 //        UARTprintf("AIN1 = %4d\t", motor2Current);
@@ -456,7 +415,7 @@ int main()
 
 //		UARTprintf("Motor_1 position: %u\n", motor1Position);
 //		UARTprintf("Motor_2 position: %u\n", motor2Position);
-
+//
 		if(isTerminalSend)
 		{
 //		cur1 = current1;
@@ -469,7 +428,7 @@ int main()
 		UARTprintf("current: %i\t%i\n", motor1Struct.current, motor2Struct.current);
 		UARTprintf("temperature = %d,%d\r", temperature1, temperature2);*/
 
-			UARTprintf("%i\n", motor2Struct.current);
+			UARTprintf("%i\n", motor1Struct.current);
 
 //		if(cur1 >= 0)
 //			UARTprintf("wp: %i mA\n", cur1);
@@ -542,14 +501,14 @@ void initExternalInterrupts(void)
 
 	//synchronization (A3, B3)
 	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, GPIO_PIN_3);
-	GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPD);
+	GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
 	GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_BOTH_EDGES);
 	GPIOIntDisable(GPIO_PORTA_BASE, GPIO_INT_PIN_3);
 	GPIOIntClear(GPIO_PORTA_BASE, GPIO_INT_PIN_3);
 	GPIOIntEnable(GPIO_PORTA_BASE, GPIO_INT_PIN_3);
 
 	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_3);
-	GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPD);
+	GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
 	GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_3, GPIO_BOTH_EDGES);
 	GPIOIntDisable(GPIO_PORTB_BASE, GPIO_INT_PIN_3);
 	GPIOIntClear(GPIO_PORTB_BASE, GPIO_INT_PIN_3);
@@ -572,7 +531,6 @@ void initExternalInterrupts(void)
 	GPIOIntClear(GPIO_PORTD_BASE, GPIO_INT_PIN_3);
 	GPIOIntRegister(GPIO_PORTD_BASE, PortDIntHandler);
 	GPIOIntEnable(GPIO_PORTD_BASE, GPIO_INT_PIN_3);
-
 
 	//MOTOR1 Overtemperature and fault warning
 	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_0);
