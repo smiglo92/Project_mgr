@@ -68,17 +68,16 @@ int main()
 
 	GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3);
 
-	ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PWM_MOD1 | ADC_TRIGGER_PWM0, 1);
+	ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_ALWAYS, 1);
 	ADCSequenceConfigure(ADC1_BASE, 0, ADC_TRIGGER_PWM_MOD0 | ADC_TRIGGER_PWM2, 0);
 
-	ADCHardwareOversampleConfigure(ADC0_BASE, 0);
+	ADCHardwareOversampleConfigure(ADC0_BASE, 32);
 	ADCHardwareOversampleConfigure(ADC1_BASE, 0);
 
-	ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0);
-	ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH2|ADC_CTL_IE|ADC_CTL_END);
+	ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0|ADC_CTL_IE|ADC_CTL_END);
 
 	ADCSequenceStepConfigure(ADC1_BASE, 0, 0, ADC_CTL_CH1);
-	ADCSequenceStepConfigure(ADC1_BASE, 0, 1, ADC_CTL_TS|ADC_CTL_IE|ADC_CTL_END);
+	ADCSequenceStepConfigure(ADC1_BASE, 0, 1, ADC_CTL_CH2|ADC_CTL_IE|ADC_CTL_END);
 
 	ADCSequenceEnable(ADC0_BASE, 0);
 	ADCSequenceEnable(ADC1_BASE, 0);

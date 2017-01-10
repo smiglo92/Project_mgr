@@ -75,7 +75,8 @@ void mb_Motor_Init(MbMotor motor)
 
 	PWMGenEnable(mbMotorPWMBase[motor], mbMotorPWMGen[motor]);
 
-	PWMGenIntTrigEnable(mbMotorPWMBase[motor], mbMotorPWMGen[motor], PWM_TR_CNT_LOAD);
+	if (motor == MOTOR2)
+		PWMGenIntTrigEnable(mbMotorPWMBase[motor], mbMotorPWMGen[motor], PWM_TR_CNT_LOAD);
 
 	GPIOPinTypeGPIOOutput(mbMotorGPIOEnablePort[motor], mbMotorGPIOEnablePin[motor]);
 }
