@@ -35,4 +35,31 @@
 #include <math.h>
 #include "arm_math.h"
 
+
+extern void ADC0_Handler(void);
+extern void ADC1_Handler(void);
+extern void PortAIntHandler(void);
+extern void PortBIntHandler(void);
+extern void PortCIntHandler(void);
+extern void PortDIntHandler(void);
+extern void PortFIntHandler(void);
+extern void PWM0LoadIntHandler(void);
+extern void PWM1LoadIntHandler(void);
+extern void Timer0IntHandler(void);
+
+extern uint32_t adc0_value[2];
+extern uint32_t adc1_value[2];
+
+extern volatile uint8_t isTerminalSend;
+extern volatile uint8_t isPid1Switch;
+extern volatile uint8_t isPid2Switch;
+extern volatile uint32_t inputVoltage1;
+extern volatile uint32_t inputVoltage2;
+extern volatile uint32_t temperature1;
+extern volatile uint32_t temperature2;
+extern volatile uint8_t motor1VelocityPidIterator;
+extern volatile uint8_t motor2VelocityPidIterator;
+extern volatile uint8_t isMotor1Synchronization;
+extern volatile uint8_t isMotor2Synchronization;
+
 #endif /* MAIN_H_ */

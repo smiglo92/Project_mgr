@@ -1,31 +1,7 @@
 
 #include "main.h"
 
-extern void ADC0_Handler(void);
-extern void ADC1_Handler(void);
-extern void PortAIntHandler(void);
-extern void PortBIntHandler(void);
-extern void PortCIntHandler(void);
-extern void PortDIntHandler(void);
-extern void PortFIntHandler(void);
-extern void PWM0LoadIntHandler(void);
-extern void PWM1LoadIntHandler(void);
-extern void Timer0IntHandler(void);
-
-void initExternalInterrupts(void);
-
-uint32_t adc0_value[2];
-uint32_t adc1_value[2];
-
 MbMotorStruct motor1Struct, motor2Struct;
-
-volatile uint32_t inputVoltage1, inputVoltage2, temperature1, temperature2;
-
-volatile uint8_t isTerminalSend = 0, isPid1Switch = 0, isPid2Switch = 0;
-
-volatile uint8_t motor1VelocityPidIterator = 0, motor2VelocityPidIterator = 10;
-
-volatile uint8_t isMotor1Synchronization = 0, isMotor2Synchronization = 0;
 
 //TODO - SYNCHRONIZACJA
 
@@ -35,6 +11,9 @@ arm_pid_instance_q31 motor1VelocityPid, motor2VelocityPid;
 
 int main()
 {
+	motor1VelocityPidIterator = 0;
+	motor2VelocityPidIterator = 10;
+
 	//Set the system clock to 80Mhz
 	/////////////////////////////////////////////////////////////////////////////////////
 	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
@@ -77,17 +56,6 @@ int main()
 	mb_LED_On(LED2);
 
 	mb_PID_init();
-
-	IntRegister(INT_GPIOA_TM4C123, PortAIntHandler);
-	IntEnable(INT_GPIOA_TM4C123);
-	IntRegister(INT_GPIOB_TM4C123, PortBIntHandler);
-	IntEnable(INT_GPIOB_TM4C123);
-	IntRegister(INT_GPIOC_TM4C123, PortCIntHandler);
-	IntEnable(INT_GPIOC_TM4C123);
-	IntRegister(INT_GPIOD_TM4C123, PortDIntHandler);
-	IntEnable(INT_GPIOD_TM4C123);
-	IntRegister(INT_GPIOF_TM4C123, PortFIntHandler);
-	IntEnable(INT_GPIOF_TM4C123);
 
 	initExternalInterrupts();
 
@@ -132,19 +100,6 @@ int main()
 	ADCIntClear(ADC1_BASE, 0);
 	ADCIntRegister(ADC1_BASE, 0, ADC1_Handler);
 	ADCIntEnable(ADC1_BASE, 0);
-
-	//Enable external interrupts
-	/////////////////////////////////////////////////////////////////////////////////////
-//	IntRegister(INT_GPIOA_TM4C123, PortAIntHandler);
-//	IntEnable(INT_GPIOA_TM4C123);
-//	IntRegister(INT_GPIOB_TM4C123, PortBIntHandler);
-//	IntEnable(INT_GPIOB_TM4C123);
-//	IntRegister(INT_GPIOC_TM4C123, PortCIntHandler);
-//	IntEnable(INT_GPIOC_TM4C123);
-//	IntRegister(INT_GPIOD_TM4C123, PortDIntHandler);
-//	IntEnable(INT_GPIOD_TM4C123);
-//	IntRegister(INT_GPIOF_TM4C123, PortFIntHandler);
-//	IntEnable(INT_GPIOF_TM4C123);
 
 	//Enable UART
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -452,114 +407,5 @@ int main()
 //		ADCProcessorTrigger(ADC1_BASE, 0);
 //		delayMS(200);
 	}
-
-}
-
-
-void initExternalInterrupts(void)
-{
-//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-//	SysCtlDelay(3);
-
-
-	//endstops (A2, A4, C4, F3)
-	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, GPIO_PIN_2);
-	GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_2, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_PIN_2, GPIO_FALLING_EDGE);
-	GPIOIntDisable(GPIO_PORTA_BASE, GPIO_INT_PIN_2);
-	GPIOIntClear(GPIO_PORTA_BASE, GPIO_INT_PIN_2);
-	GPIOIntRegister(GPIO_PORTA_BASE, PortAIntHandler);
-	GPIOIntEnable(GPIO_PORTA_BASE, GPIO_INT_PIN_2);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, GPIO_PIN_4);
-	GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_4, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_PIN_4, GPIO_FALLING_EDGE);
-	GPIOIntDisable(GPIO_PORTA_BASE, GPIO_INT_PIN_4);
-	GPIOIntClear(GPIO_PORTA_BASE, GPIO_INT_PIN_4);
-	GPIOIntEnable(GPIO_PORTA_BASE, GPIO_INT_PIN_4);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTF_BASE, GPIO_PIN_3);
-	GPIOPadConfigSet(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_FALLING_EDGE);
-	GPIOIntDisable(GPIO_PORTF_BASE, GPIO_INT_PIN_3);
-	GPIOIntClear(GPIO_PORTF_BASE, GPIO_INT_PIN_3);
-	GPIOIntRegister(GPIO_PORTF_BASE, PortFIntHandler);
-	GPIOIntEnable(GPIO_PORTF_BASE, GPIO_INT_PIN_3);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, GPIO_PIN_4);
-	GPIOPadConfigSet(GPIO_PORTC_BASE, GPIO_PIN_4, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTC_BASE, GPIO_PIN_4, GPIO_FALLING_EDGE);
-	GPIOIntDisable(GPIO_PORTC_BASE, GPIO_INT_PIN_4);
-	GPIOIntClear(GPIO_PORTC_BASE, GPIO_INT_PIN_4);
-	GPIOIntRegister(GPIO_PORTC_BASE, PortCIntHandler);
-	GPIOIntEnable(GPIO_PORTC_BASE, GPIO_INT_PIN_4);
-
-
-	//synchronization (A3, B3)
-	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, GPIO_PIN_3);
-	GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_BOTH_EDGES);
-	GPIOIntDisable(GPIO_PORTA_BASE, GPIO_INT_PIN_3);
-	GPIOIntClear(GPIO_PORTA_BASE, GPIO_INT_PIN_3);
-	GPIOIntEnable(GPIO_PORTA_BASE, GPIO_INT_PIN_3);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_3);
-	GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_3, GPIO_BOTH_EDGES);
-	GPIOIntDisable(GPIO_PORTB_BASE, GPIO_INT_PIN_3);
-	GPIOIntClear(GPIO_PORTB_BASE, GPIO_INT_PIN_3);
-	GPIOIntRegister(GPIO_PORTB_BASE, PortBIntHandler);
-	GPIOIntEnable(GPIO_PORTB_BASE, GPIO_INT_PIN_3);
-
-
-	//safety inputs (A5, D3)
-	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, GPIO_PIN_5);
-	GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_5, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPD);
-	GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_PIN_5, GPIO_BOTH_EDGES);
-	GPIOIntDisable(GPIO_PORTA_BASE, GPIO_INT_PIN_5);
-	GPIOIntClear(GPIO_PORTA_BASE, GPIO_INT_PIN_5);
-	GPIOIntEnable(GPIO_PORTA_BASE, GPIO_INT_PIN_5);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_PIN_3);
-	GPIOPadConfigSet(GPIO_PORTD_BASE, GPIO_PIN_3, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPD);
-	GPIOIntTypeSet(GPIO_PORTD_BASE, GPIO_PIN_3, GPIO_BOTH_EDGES);
-	GPIOIntDisable(GPIO_PORTD_BASE, GPIO_INT_PIN_3);
-	GPIOIntClear(GPIO_PORTD_BASE, GPIO_INT_PIN_3);
-	GPIOIntRegister(GPIO_PORTD_BASE, PortDIntHandler);
-	GPIOIntEnable(GPIO_PORTD_BASE, GPIO_INT_PIN_3);
-
-	//MOTOR1 Overtemperature and fault warning
-	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_0);
-	GPIOPadConfigSet(GPIO_PORTB_BASE, GPIO_PIN_0, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_0, GPIO_BOTH_EDGES);
-	GPIOIntDisable(GPIO_PORTB_BASE, GPIO_INT_PIN_0);
-	GPIOIntClear(GPIO_PORTB_BASE, GPIO_INT_PIN_0);
-	GPIOIntEnable(GPIO_PORTB_BASE, GPIO_INT_PIN_0);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTF_BASE, GPIO_PIN_1);
-	GPIOPadConfigSet(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPU);
-	GPIOIntTypeSet(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_BOTH_EDGES);
-	GPIOIntDisable(GPIO_PORTF_BASE, GPIO_INT_PIN_1);
-	GPIOIntClear(GPIO_PORTF_BASE, GPIO_INT_PIN_1);
-	GPIOIntEnable(GPIO_PORTF_BASE, GPIO_INT_PIN_1);
-
-	//Encoder index pulses (F4, C7)
-	GPIOPinTypeGPIOInput(GPIO_PORTF_BASE, GPIO_PIN_4);
-	GPIOPadConfigSet(GPIO_PORTF_BASE, GPIO_PIN_4, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPD);
-	GPIOIntTypeSet(GPIO_PORTF_BASE, GPIO_PIN_4, GPIO_RISING_EDGE);
-	GPIOIntDisable(GPIO_PORTF_BASE, GPIO_INT_PIN_4);
-	GPIOIntClear(GPIO_PORTF_BASE, GPIO_INT_PIN_4);
-	GPIOIntEnable(GPIO_PORTF_BASE, GPIO_INT_PIN_4);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, GPIO_PIN_7);
-	GPIOPadConfigSet(GPIO_PORTC_BASE, GPIO_PIN_7, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD_WPD);
-	GPIOIntTypeSet(GPIO_PORTC_BASE, GPIO_PIN_7, GPIO_RISING_EDGE);
-	GPIOIntDisable(GPIO_PORTC_BASE, GPIO_INT_PIN_7);
-	GPIOIntClear(GPIO_PORTC_BASE, GPIO_INT_PIN_7);
-	GPIOIntEnable(GPIO_PORTC_BASE, GPIO_INT_PIN_7);
 
 }

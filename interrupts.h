@@ -12,12 +12,19 @@
 #include "arm_math.h"
 
 extern MbMotorStruct motor1Struct, motor2Struct;
-extern uint32_t adc0_value[2];
-extern uint32_t adc1_value[2];
-extern volatile uint8_t isTerminalSend, isPid1Switch, isPid2Switch;
-extern volatile uint32_t inputVoltage1, inputVoltage2, temperature1, temperature2;
-extern volatile uint8_t isMotor1Synchronization, isMotor2Synchronization;
-extern volatile uint8_t motor1VelocityPidIterator, motor2VelocityPidIterator;
+uint32_t adc0_value[2];
+uint32_t adc1_value[2];
+volatile uint8_t isTerminalSend;
+volatile uint8_t isPid1Switch;
+volatile uint8_t isPid2Switch;
+volatile uint32_t inputVoltage1;
+volatile uint32_t inputVoltage2;
+volatile uint32_t temperature1;
+volatile uint32_t temperature2;
+volatile uint8_t isMotor1Synchronization;
+volatile uint8_t isMotor2Synchronization;
+volatile uint8_t motor1VelocityPidIterator;
+volatile uint8_t motor2VelocityPidIterator;
 volatile int32_t currentMotor1[8];
 volatile int32_t currentMotorAvg;
 volatile uint8_t currentMotorIter;

@@ -38,5 +38,6 @@ void mb_Motor_Init(MbMotor motor);
 void mb_Motor_Enable(MbMotor motor);
 void mb_Motor_Disable(MbMotor motor);
 void mb_Motor_Set_Pulse_Width(MbMotor motor, int16_t width);
+void initExternalInterrupts(void);
 
 #endif /* MB_MOTOR_H_ */
