@@ -211,8 +211,6 @@ int main()
 
 		if(isPid2Switch)
 		{
-//			mb_LED_Switch(LED1);
-
 			if (motor2VelocityPidIterator == 0 && isMotor2Synchronization)
 			{
 				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) * (QEIDirectionGet(QEI1_BASE));
@@ -265,8 +263,6 @@ int main()
 
 		if(isPid1Switch)
 		{
-//			mb_LED_Switch(LED1);
-
 			if (motor1VelocityPidIterator == 0 && isMotor1Synchronization)
 			{
 				motor1Struct.velocity = (QEIVelocityGet(QEI0_BASE) * 30) * (QEIDirectionGet(QEI0_BASE));
@@ -313,82 +309,16 @@ int main()
 
 			isPid1Switch = 0;
 			mb_LED_Off(LED1);
-//			isTerminalSend = 1;
 		}
 
-//        UARTprintf("AIN0 = %4d\t", motor1Current);
-//        UARTprintf("AIN1 = %4d\t", motor2Current);
-//        UARTprintf("AIN2 = %4d\t", inputVoltage);
-//        UARTprintf("temperature = %d,%d\r", temperature1, temperature2);
 
-//		motor1Struct->velocity = QEIVelocityGet(QEI0_BASE) * 3000 / 500;
-//		motor1Struct->velocityErrorOldOld = motor1Struct->velocityErrorOld;
-//		motor1Struct->velocityErrorOld = motor1Struct->velocityError;
-//		motor1Struct->velocityError = motor1Struct->velocityTarget - motor1Struct->velocity;
-//
-//		motor1Struct->pwmInputOld = motor1Struct->pwmInput;
-//		motor1Struct->pwmInputDelta = motor1Struct->velocityError - motor1Struct->velocityErrorOld +
-//				loopTime * (motor1Struct->velocityError + motor1Struct->velocityErrorOld) /
-//				(2 * motor1Struct->velocityPid->ti) + motor1Struct->velocityPid->td *
-//				(motor1Struct->velocityError - 2 * motor1Struct->velocityErrorOld +
-//				motor1Struct->velocityErrorOldOld) / loopTime;
-//		motor1Struct->pwmInputDelta = motor1Struct->velocityPid->kp*motor1Struct->pwmInputDelta;
-//
-//		if (motor1Struct->pwmInputDelta >= 30)
-//			motor1Struct->pwmInputDelta = 30;
-//
-//		if (motor1Struct->pwmInputDelta <= -30)
-//			motor1Struct->pwmInputDelta = -30;
-//
-//		motor1Struct->pwmInput = motor1Struct->pwmInputDelta + motor1Struct->pwmInputOld;
-//
-//		if (motor1Struct->pwmInput <= 100)
-//		{
-//			motor1Struct->pwmInput = 100;
-//		}
-//		if (motor1Struct->pwmInput >= 800)
-//		{
-//			motor1Struct->pwmInput = 800;
-//		}
-//
-//		mb_Motor_Set_Pulse_Width(MOTOR1, motor1Struct->pwmInput);
-//
-//		motor2Struct->velocity = QEIVelocityGet(QEI1_BASE);
-//		motor2Struct->velocity = motor2Struct->velocity * 3000 / 32;
-//		motor2Struct->velocityError = motor2Struct->velocityTarget - motor2Struct->velocity;
-//
-////		UARTprintf("%d\n", motor2Current);
-//
-//		if (loopIterator == 100)
-//		{
-//			UARTprintf("Motor_1 velocity: %u\n", motor1Struct->velocity);
-//			UARTprintf("Motor_2 velocity: %u\n", motor2Struct->velocity);
-//			UARTprintf("\n\n\n");
-//			loopIterator = 0;
-//		}
-
-//		UARTprintf("Motor_1 position: %u\n", motor1Position);
-//		UARTprintf("Motor_2 position: %u\n", motor2Position);
-//
 		if(isTerminalSend)
 		{
-//		cur1 = current1;
 
-//			isMotor1Synchronization = 1;
-//			isMotor2Synchronization = 1;
-
-		/*UARTprintf("pwm: %i\t%i\n", motor1Struct.pwmInput, motor2Struct.pwmInput);
-		UARTprintf("error: %i\t%i\n", motor1Struct.currentError, motor2Struct.currentError);
-		UARTprintf("current: %i\t%i\n", motor1Struct.current, motor2Struct.current);
-		UARTprintf("temperature = %d,%d\r", temperature1, temperature2);*/
+//		UARTprintf("temperature = %d,%d\r", temperature1, temperature2);
 
 			UARTprintf("%i\n", motor1Struct.current);
 
-//		if(cur1 >= 0)
-//			UARTprintf("wp: %i mA\n", cur1);
-//		if(cur1 < 0)
-//			UARTprintf("Motor_1 current: -%i mA\n", -cur1);
-//		UARTprintf("Motor_2 current: %d mA\n", current2);
 //		if(inputVoltage2 < 10)
 //			UARTprintf("Input voltage: %u,00%u\n", inputVoltage1, inputVoltage2);
 //		else if(inputVoltage2 < 100 && inputVoltage2 > 9)
@@ -401,10 +331,7 @@ int main()
 //			UARTprintf("Microcontroller temperature: %u,%u\n", temperature1, temperature2);
 		isTerminalSend = 0;
 		}
-//		ADCProcessorTrigger(ADC0_BASE, 1);
-//		delayMS(200);
-//		ADCProcessorTrigger(ADC1_BASE, 0);
-//		delayMS(200);
+
 	}
 
 }
