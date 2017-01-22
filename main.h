@@ -47,7 +47,7 @@ extern void PWM0LoadIntHandler(void);
 extern void PWM1LoadIntHandler(void);
 extern void Timer0IntHandler(void);
 
-extern uint32_t adc0_value[2];
+extern uint32_t adc0_value[1];
 extern uint32_t adc1_value[2];
 
 extern volatile uint8_t isTerminalSend;
@@ -61,5 +61,10 @@ extern volatile uint8_t motor1VelocityPidIterator;
 extern volatile uint8_t motor2VelocityPidIterator;
 extern volatile uint8_t isMotor1Synchronization;
 extern volatile uint8_t isMotor2Synchronization;
+
+extern volatile uint8_t isMeasureZeroCurrent;
+extern volatile uint32_t zeroCurrentAdcTab[32];
+extern volatile uint32_t zeroCurrentAdc;
+extern volatile uint8_t zeroCurrentAdcIter;
 
 #endif /* MAIN_H_ */

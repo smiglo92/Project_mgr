@@ -9,8 +9,16 @@ arm_pid_instance_q31 motor1CurrentPid, motor2CurrentPid;
 
 arm_pid_instance_q31 motor1VelocityPid, motor2VelocityPid;
 
+uint32_t ui32ConfigAdc0;
+uint32_t ui32ConfigAdc1;
+
+uint32_t ui32ClockDivAdc0;
+uint32_t ui32ClockDivAdc1;
+
 int main()
 {
+	uint8_t i;
+
 	motor1VelocityPidIterator = 0;
 	motor2VelocityPidIterator = 10;
 
@@ -48,9 +56,6 @@ int main()
 
 	mb_Motor_Enable(MOTOR1);
 	mb_Motor_Enable(MOTOR2);
-
-	mb_Motor_Set_Pulse_Width(MOTOR1, 500);
-	mb_Motor_Set_Pulse_Width(MOTOR2, 500);
 
 	mb_LED_On(LED1);
 	mb_LED_On(LED2);
@@ -119,7 +124,7 @@ int main()
 	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC_UP);
 
 //	TimerLoadSet(TIMER0_BASE, TIMER_A, 1000);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, (SysCtlClockGet()/1000) -1);
+	TimerLoadSet(TIMER0_BASE, TIMER_A, (SysCtlClockGet()/100) -1);
 
 	TimerIntDisable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
@@ -161,6 +166,24 @@ int main()
 	QEIEnable(QEI0_BASE);
 	QEIEnable(QEI1_BASE);
 
+	isMeasureZeroCurrent = 1;
+
+	while (zeroCurrentAdcIter < 32);
+
+	isMeasureZeroCurrent = 0;
+
+	zeroCurrentAdc = 0;
+
+	for (i = 0; i < 32; i++)
+	{
+		zeroCurrentAdc += zeroCurrentAdcTab[i];
+	}
+
+	zeroCurrentAdc = zeroCurrentAdc >> 5;
+
+	mb_Motor_Set_Pulse_Width(MOTOR1, 500);
+	mb_Motor_Set_Pulse_Width(MOTOR2, 500);
+
 	//Write variables
 	/////////////////////////////////////////////////////////////////////////////////////
 	motor1CurrentPid.Kp = motor1Struct.currentPid.kp;
@@ -170,7 +193,7 @@ int main()
 	arm_pid_init_q31(&motor1CurrentPid, 1);
 
 	motor1CurrentPid.state[2] = 100;
-	motor1Struct.currentTarget = 80;
+	motor1Struct.currentTarget = -50;
 	motor1Struct.pwmInput = 100;
 	motor1Struct.currentError = 0;
 
@@ -192,7 +215,7 @@ int main()
 	arm_pid_init_q31(&motor1VelocityPid, 1);
 
 	motor1VelocityPid.state[2] = 0;
-	motor1Struct.velocityTarget = 500;
+	motor1Struct.velocityTarget = 1000;
 	motor1Struct.velocityError = 0;
 
 	motor2VelocityPid.Kp = motor2Struct.velocityPid.kp;
@@ -204,6 +227,9 @@ int main()
 	motor2VelocityPid.state[2] = 0;
 	motor2Struct.velocityTarget = 3000;
 	motor2Struct.velocityError = 0;
+
+	ui32ConfigAdc0 = ADCClockConfigGet(ADC0_BASE, &ui32ClockDivAdc0);
+	ui32ConfigAdc1 = ADCClockConfigGet(ADC1_BASE, &ui32ClockDivAdc1);
 
 	while (1)
 	{
@@ -289,15 +315,15 @@ int main()
 
 			motor1Struct.pwmInput = arm_pid_q31(&motor1CurrentPid, motor1Struct.currentError);
 
-			if(motor1Struct.pwmInput > 1000)
+			if(motor1Struct.pwmInput > 2000)
 			{
-				motor1Struct.pwmInput = 1000;
-				motor1CurrentPid.state[2] = 1000;
+				motor1Struct.pwmInput = 2000;
+				motor1CurrentPid.state[2] = 2000;
 			}
-			if(motor1Struct.pwmInput < -1000)
+			if(motor1Struct.pwmInput < -2000)
 			{
-				motor1Struct.pwmInput = -1000;
-				motor1CurrentPid.state[2] = -1000;
+				motor1Struct.pwmInput = -2000;
+				motor1CurrentPid.state[2] = -2000;
 			}
 
 			mb_Motor_Set_Pulse_Width(MOTOR1, motor1Struct.pwmInput);
@@ -330,6 +356,9 @@ int main()
 //		else
 //			UARTprintf("Microcontroller temperature: %u,%u\n", temperature1, temperature2);
 		isTerminalSend = 0;
+
+		isMotor1Synchronization = 1;
+		isMotor2Synchronization = 1;
 		}
 
 	}

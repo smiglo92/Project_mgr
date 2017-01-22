@@ -12,7 +12,7 @@
 #include "arm_math.h"
 
 extern MbMotorStruct motor1Struct, motor2Struct;
-uint32_t adc0_value[2];
+uint32_t adc0_value[1];
 uint32_t adc1_value[2];
 volatile uint8_t isTerminalSend;
 volatile uint8_t isPid1Switch;
@@ -29,6 +29,10 @@ volatile int32_t currentMotor1[8];
 volatile int32_t currentMotorAvg;
 volatile uint8_t currentMotorIter;
 
+volatile uint8_t isMeasureZeroCurrent;
+volatile uint32_t zeroCurrentAdcTab[32];
+volatile uint32_t zeroCurrentAdc;
+volatile uint8_t zeroCurrentAdcIter;
 
 extern arm_pid_instance_q31 motor1CurrentPid, motor2CurrentPid;
 extern arm_pid_instance_q31 motor1VelocityPid, motor2VelocityPid;

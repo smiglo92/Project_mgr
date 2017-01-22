@@ -42,7 +42,26 @@ void PWM0LoadIntHandler(void)
 
 void PWM1LoadIntHandler(void)
 {
+//	volatile uint8_t i;
+
 	PWMGenIntClear(PWM1_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+
+//    ADCSequenceDataGet(ADC0_BASE, 0, adc0_value);
+
+//    motor1Struct.current = (int32_t)adc0_value[0];
+//    currentMotor1[currentMotorIter] = ((int32_t)(adc0_value[0])-2045)*100000/14978;
+//    currentMotorIter++;
+//    if(currentMotorIter == 8)
+//    	currentMotorIter = 0;
+//    currentMotorAvg = 0;
+//    for(i = 0; i < 8; i++)
+//    	currentMotorAvg += currentMotor1[i];
+//
+//    motor1Struct.current = currentMotorAvg >> 3;
+//
+//    inputVoltage1 = adc0_value[1]*182380/12467;
+//    inputVoltage2 = inputVoltage1 % 1000;
+//    inputVoltage1 = inputVoltage1 / 1000;
 
 	mb_LED_On(LED1);
 	isPid1Switch = 1;
@@ -67,8 +86,13 @@ void ADC0_Handler(void) {
     ADCIntClear(ADC0_BASE, 0);
     ADCSequenceDataGet(ADC0_BASE, 0, adc0_value);
 
-
-//    motor1Struct.current = (int32_t)adc0_value[0];
+    if (isMeasureZeroCurrent)
+    {
+    	zeroCurrentAdcTab[zeroCurrentAdcIter] = adc0_value[0];
+    	zeroCurrentAdcIter++;
+    }
+    else
+//    	motor1Struct.current = ((int32_t)(adc0_value[0])-(int32_t)zeroCurrentAdc)*100000/14978;
     currentMotor1[currentMotorIter] = ((int32_t)(adc0_value[0])-2045)*100000/14978;
     currentMotorIter++;
     if(currentMotorIter == 8)
@@ -78,10 +102,6 @@ void ADC0_Handler(void) {
     	currentMotorAvg += currentMotor1[i];
 
     motor1Struct.current = currentMotorAvg >> 3;
-
-    inputVoltage1 = adc0_value[1]*182380/12467;
-    inputVoltage2 = inputVoltage1 % 1000;
-    inputVoltage1 = inputVoltage1 / 1000;
 
 //    isPid1Switch = 1;
 
@@ -100,10 +120,13 @@ void ADC1_Handler(void) {
     	motor2Struct.current = 0;
     motor2Struct.current *= QEIDirectionGet(QEI1_BASE);
 
+    inputVoltage1 = adc1_value[1]*182380/12467;
+    inputVoltage2 = inputVoltage1 % 1000;
+    inputVoltage1 = inputVoltage1 / 1000;
 
-    temperature1 = 14750 - 24750 * adc1_value[1] / 4095;
-    temperature2 = temperature1 % 100;
-    temperature1 = temperature1 / 100;
+//    temperature1 = 14750 - 24750 * adc1_value[1] / 4095;
+//    temperature2 = temperature1 % 100;
+//    temperature1 = temperature1 / 100;
 
 //    isPid2Switch = 1;
 

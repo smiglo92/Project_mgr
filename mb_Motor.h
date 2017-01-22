@@ -21,16 +21,16 @@ typedef struct {
 
 typedef struct {
 	volatile int32_t current;
-	int32_t currentTarget;
-	int32_t currentTarget2;
-	int32_t currentError;
+	volatile int32_t currentTarget;
+	volatile int32_t currentTarget2;
+	volatile int32_t currentError;
 	MbMotorPid currentPid;
-	int32_t position;
-	int32_t velocity;
-	int32_t velocityTarget;
-	int32_t velocityError;
+	volatile int32_t position;
+	volatile int32_t velocity;
+	volatile int32_t velocityTarget;
+	volatile int32_t velocityError;
 	MbMotorPid velocityPid;
-	int32_t pwmInput;
+	volatile int32_t pwmInput;
 }MbMotorStruct;
 
 

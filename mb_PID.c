@@ -33,7 +33,7 @@ void mb_PID_init(void)
 //Set velocity PID variables
 /////////////////////////////////////////////////////////////////////////////////////
 	motor1Struct.velocityPid.kp = 0;
-	motor1Struct.velocityPid.ti = 400000;
+	motor1Struct.velocityPid.ti = 10000;
 	motor1Struct.velocityPid.td = 0;
 
 	motor2Struct.velocityPid.kp = 0;
