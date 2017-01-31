@@ -17,6 +17,7 @@ typedef struct {
 	int32_t kp;
 	int32_t ti;
 	int32_t td;
+	uint8_t antiwindup;
 }MbMotorPid;
 
 typedef struct {

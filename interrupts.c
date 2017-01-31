@@ -93,7 +93,7 @@ void ADC0_Handler(void) {
     }
     else
 //    	motor1Struct.current = ((int32_t)(adc0_value[0])-(int32_t)zeroCurrentAdc)*100000/14978;
-    currentMotor1[currentMotorIter] = ((int32_t)(adc0_value[0])-2045)*100000/14978;
+    currentMotor1[currentMotorIter] = ((int32_t)(adc0_value[0])-(int32_t)zeroCurrentAdc)*100000/14978;
     currentMotorIter++;
     if(currentMotorIter == 8)
     	currentMotorIter = 0;

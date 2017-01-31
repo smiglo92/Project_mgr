@@ -15,6 +15,8 @@ uint32_t ui32ConfigAdc1;
 uint32_t ui32ClockDivAdc0;
 uint32_t ui32ClockDivAdc1;
 
+uint16_t zmienna_pomocnicza;
+
 int main()
 {
 	uint8_t i;
@@ -182,7 +184,7 @@ int main()
 	zeroCurrentAdc = zeroCurrentAdc >> 5;
 
 	mb_Motor_Set_Pulse_Width(MOTOR1, 500);
-	mb_Motor_Set_Pulse_Width(MOTOR2, 500);
+	mb_Motor_Set_Pulse_Width(MOTOR2, 200);
 
 	//Write variables
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -192,9 +194,9 @@ int main()
 
 	arm_pid_init_q31(&motor1CurrentPid, 1);
 
-	motor1CurrentPid.state[2] = 100;
-	motor1Struct.currentTarget = -50;
-	motor1Struct.pwmInput = 100;
+	motor1CurrentPid.state[2] = 500;
+	motor1Struct.currentTarget = -70;
+	motor1Struct.pwmInput = 500;
 	motor1Struct.currentError = 0;
 
 	motor2CurrentPid.Kp = motor2Struct.currentPid.kp;
@@ -204,7 +206,7 @@ int main()
 	arm_pid_init_q31(&motor2CurrentPid, 1);
 
 	motor2CurrentPid.state[2] = 200;
-	motor2Struct.currentTarget = 20;
+	motor2Struct.currentTarget = 0;
 	motor2Struct.pwmInput = 200;
 	motor2Struct.currentError = 0;
 
@@ -215,7 +217,7 @@ int main()
 	arm_pid_init_q31(&motor1VelocityPid, 1);
 
 	motor1VelocityPid.state[2] = 0;
-	motor1Struct.velocityTarget = 1000;
+	motor1Struct.velocityTarget = 500;
 	motor1Struct.velocityError = 0;
 
 	motor2VelocityPid.Kp = motor2Struct.velocityPid.kp;
@@ -247,12 +249,11 @@ int main()
 				if(motor2Struct.currentTarget2 > 150)
 				{
 					motor2Struct.currentTarget2 = 150;
-					motor2VelocityPid.state[2] = 150;
+
 				}
 				if(motor2Struct.currentTarget2 < -150)
 				{
 					motor2Struct.currentTarget2 = -150;
-					motor2VelocityPid.state[2] = -150;
 				}
 			}
 
@@ -268,12 +269,31 @@ int main()
 			if(motor2Struct.pwmInput > 2000)
 			{
 				motor2Struct.pwmInput = 2000;
-				motor2CurrentPid.state[2] = 2000;
+				if(motor2Struct.currentPid.antiwindup == 0)
+				{
+					motor2CurrentPid.A0 -= motor2CurrentPid.Ki;
+					motor2CurrentPid.Ki = 0;
+					motor2Struct.currentPid.antiwindup = 1;
+				}
 			}
-			if(motor2Struct.pwmInput < -2000)
+			else if(motor2Struct.pwmInput < -2000)
 			{
 				motor2Struct.pwmInput = -2000;
-				motor2CurrentPid.state[2] = -2000;
+				if(motor2Struct.currentPid.antiwindup == 0)
+				{
+					motor2CurrentPid.A0 -= motor2CurrentPid.Ki;
+					motor2CurrentPid.Ki = 0;
+					motor2Struct.currentPid.antiwindup = 1;
+				}
+			}
+			else
+			{
+				if(motor2Struct.currentPid.antiwindup == 1)
+				{
+					motor2Struct.currentPid.antiwindup = 0;
+					motor2CurrentPid.Ki = motor2Struct.currentPid.ti;
+					motor2CurrentPid.A0 += motor2CurrentPid.Ki;
+				}
 			}
 
 			mb_Motor_Set_Pulse_Width(MOTOR2, motor2Struct.pwmInput);
@@ -299,12 +319,31 @@ int main()
 				if(motor1Struct.currentTarget2 > 200)
 				{
 					motor1Struct.currentTarget2 = 200;
-					motor1VelocityPid.state[2] = 200;
+					if(motor1Struct.velocityPid.antiwindup == 0)
+					{
+						motor1VelocityPid.A0 -= motor1VelocityPid.Ki;
+						motor1VelocityPid.Ki = 0;
+						motor1Struct.velocityPid.antiwindup = 1;
+					}
 				}
-				if(motor1Struct.currentTarget2 < -200)
+				else if(motor1Struct.currentTarget2 < -200)
 				{
 					motor1Struct.currentTarget2 = -200;
-					motor1VelocityPid.state[2] = -200;
+					if(motor1Struct.velocityPid.antiwindup == 0)
+					{
+						motor1VelocityPid.A0 -= motor1VelocityPid.Ki;
+						motor1VelocityPid.Ki = 0;
+						motor1Struct.velocityPid.antiwindup = 1;
+					}
+				}
+				else
+				{
+					if(motor1Struct.velocityPid.antiwindup == 1)
+					{
+						motor1Struct.velocityPid.antiwindup = 0;
+						motor1VelocityPid.Ki = motor1Struct.velocityPid.ti;
+						motor1VelocityPid.A0 += motor1VelocityPid.Ki;
+					}
 				}
 			}
 
@@ -318,12 +357,31 @@ int main()
 			if(motor1Struct.pwmInput > 2000)
 			{
 				motor1Struct.pwmInput = 2000;
-				motor1CurrentPid.state[2] = 2000;
+				if(motor1Struct.currentPid.antiwindup == 0)
+				{
+					motor1CurrentPid.A0 -= motor1CurrentPid.Ki;
+					motor1CurrentPid.Ki = 0;
+					motor1Struct.currentPid.antiwindup = 1;
+				}
 			}
-			if(motor1Struct.pwmInput < -2000)
+			else if(motor1Struct.pwmInput < -2000)
 			{
 				motor1Struct.pwmInput = -2000;
-				motor1CurrentPid.state[2] = -2000;
+				if(motor1Struct.currentPid.antiwindup == 0)
+				{
+					motor1CurrentPid.A0 -= motor1CurrentPid.Ki;
+					motor1CurrentPid.Ki = 0;
+					motor1Struct.currentPid.antiwindup = 1;
+				}
+			}
+			else
+			{
+				if(motor1Struct.currentPid.antiwindup == 1)
+				{
+					motor1Struct.currentPid.antiwindup = 0;
+					motor1CurrentPid.Ki = motor1Struct.currentPid.ti;
+					motor1CurrentPid.A0 += motor1CurrentPid.Ki;
+				}
 			}
 
 			mb_Motor_Set_Pulse_Width(MOTOR1, motor1Struct.pwmInput);
@@ -343,7 +401,7 @@ int main()
 
 //		UARTprintf("temperature = %d,%d\r", temperature1, temperature2);
 
-			UARTprintf("%i\n", motor1Struct.current);
+			UARTprintf("%i\n", motor1Struct.velocity);
 
 //		if(inputVoltage2 < 10)
 //			UARTprintf("Input voltage: %u,00%u\n", inputVoltage1, inputVoltage2);
@@ -357,8 +415,18 @@ int main()
 //			UARTprintf("Microcontroller temperature: %u,%u\n", temperature1, temperature2);
 		isTerminalSend = 0;
 
+		zmienna_pomocnicza++;
 		isMotor1Synchronization = 1;
-		isMotor2Synchronization = 1;
+//		isMotor2Synchronization = 1;
+
+		if(zmienna_pomocnicza == 300)
+		{
+			if(motor1Struct.velocityTarget == 500)
+				motor1Struct.velocityTarget = -500;
+			else
+				motor1Struct.velocityTarget = 500;
+			zmienna_pomocnicza = 0;
+		}
 		}
 
 	}
