@@ -195,7 +195,7 @@ int main()
 	arm_pid_init_q31(&motor1CurrentPid, 1);
 
 	motor1CurrentPid.state[2] = 500;
-	motor1Struct.currentTarget = -70;
+	motor1Struct.currentTarget = 40;
 	motor1Struct.pwmInput = 500;
 	motor1Struct.currentError = 0;
 
@@ -206,7 +206,7 @@ int main()
 	arm_pid_init_q31(&motor2CurrentPid, 1);
 
 	motor2CurrentPid.state[2] = 200;
-	motor2Struct.currentTarget = 0;
+	motor2Struct.currentTarget = 40;
 	motor2Struct.pwmInput = 200;
 	motor2Struct.currentError = 0;
 
@@ -235,8 +235,6 @@ int main()
 
 	while (1)
 	{
-
-
 		if(isPid2Switch)
 		{
 			if (motor2VelocityPidIterator == 0 && isMotor2Synchronization)
@@ -249,11 +247,31 @@ int main()
 				if(motor2Struct.currentTarget2 > 150)
 				{
 					motor2Struct.currentTarget2 = 150;
-
+					if(motor2Struct.velocityPid.antiwindup == 0)
+					{
+						motor2VelocityPid.A0 -= motor2VelocityPid.Ki;
+						motor2VelocityPid.Ki = 0;
+						motor2Struct.velocityPid.antiwindup = 1;
+					}
 				}
-				if(motor2Struct.currentTarget2 < -150)
+				else if(motor2Struct.currentTarget2 < -150)
 				{
 					motor2Struct.currentTarget2 = -150;
+					if(motor2Struct.velocityPid.antiwindup == 0)
+					{
+						motor2VelocityPid.A0 -= motor2VelocityPid.Ki;
+						motor2VelocityPid.Ki = 0;
+						motor2Struct.velocityPid.antiwindup = 1;
+					}
+				}
+				else
+				{
+					if(motor2Struct.velocityPid.antiwindup == 1)
+					{
+						motor2Struct.velocityPid.antiwindup = 0;
+						motor2VelocityPid.Ki = motor2Struct.velocityPid.ti;
+						motor2VelocityPid.A0 += motor2VelocityPid.Ki;
+					}
 				}
 			}
 
@@ -401,7 +419,7 @@ int main()
 
 //		UARTprintf("temperature = %d,%d\r", temperature1, temperature2);
 
-			UARTprintf("%i\n", motor1Struct.velocity);
+			UARTprintf("%i\n", motor1CurrentPid.state[2]);
 
 //		if(inputVoltage2 < 10)
 //			UARTprintf("Input voltage: %u,00%u\n", inputVoltage1, inputVoltage2);
@@ -416,15 +434,21 @@ int main()
 		isTerminalSend = 0;
 
 		zmienna_pomocnicza++;
-		isMotor1Synchronization = 1;
+//		isMotor1Synchronization = 1;
 //		isMotor2Synchronization = 1;
 
 		if(zmienna_pomocnicza == 300)
 		{
 			if(motor1Struct.velocityTarget == 500)
+			{
 				motor1Struct.velocityTarget = -500;
+//				motor2Struct.velocityTarget = -500;
+			}
 			else
+			{
 				motor1Struct.velocityTarget = 500;
+//				motor2Struct.velocityTarget = 500;
+			}
 			zmienna_pomocnicza = 0;
 		}
 		}
