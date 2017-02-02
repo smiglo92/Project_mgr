@@ -59,8 +59,6 @@ extern volatile uint32_t temperature1;
 extern volatile uint32_t temperature2;
 extern volatile uint8_t motor1VelocityPidIterator;
 extern volatile uint8_t motor2VelocityPidIterator;
-extern volatile uint8_t isMotor1Synchronization;
-extern volatile uint8_t isMotor2Synchronization;
 
 extern volatile uint8_t isMeasureZeroCurrent;
 extern volatile uint32_t zeroCurrentAdcTab[32];

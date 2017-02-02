@@ -132,6 +132,11 @@ void ADC1_Handler(void) {
 
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+// GPIOA external interrupt handler
+///////////////////////////////////////////////////////////////////////////////
 void PortAIntHandler(void)
 {
 	uint32_t status = 0;
@@ -139,27 +144,152 @@ void PortAIntHandler(void)
 	status = GPIOIntStatus(GPIO_PORTA_BASE, true);
 	GPIOIntClear(GPIO_PORTA_BASE, status);
 
+
+/////*LEFT ENDSTOP - MOTOR2*/////////////////////
 	if(status & GPIO_INT_PIN_2 == GPIO_INT_PIN_2)
 	{
+		/*Falling edge - endstop is pushed*/
+		if(GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_2) == 0)
+		{
+			/*Synchronization is enabled*/
+			if(motor2Struct.synchronization.isEnable)
+			{
+				/*Change motor direction*/
+				if(motor2Struct.direction == LEFT)
+				{
+					motor2Struct.velocityTarget =  motor2Struct.synchronization.velocity;
+					motor2Struct.direction = RIGHT;
+				}
+			}
 
+			/*Synchronization isn't enabled*/
+			else
+			{
+				motor2Struct.velocityTarget = 0;
+			}
+		}
 	}
 
+
+/////*HOME SWITCH - MOTOR2*//////////////////////
 	if(status & GPIO_INT_PIN_3 == GPIO_INT_PIN_3)
 	{
-
+		/*Falling edge*/
+		if(GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_3) == 0)
+		{
+			/*Motor direction is left*/
+			if(motor2Struct.direction == LEFT)
+			{
+				if(motor2Struct.synchronization.method & 0b1 == 0)
+				{
+					/*Stop with index pulse*/
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor2Struct.synchronization.method & 0b1 == 1)
+				{
+					/*Change direction and stop with index pulse*/
+					motor2Struct.velocityTarget = motor2Struct.synchronization.velocity;
+					motor2Struct.direction = RIGHT;
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+			/*Motor direction is right*/
+			else if(motor2Struct.direction == RIGHT)
+			{
+				if(motor2Struct.synchronization.method & 0b1 == 0)
+				{
+					/*Change direction and stop with index pulse*/
+					motor2Struct.velocityTarget = (-1) *
+							motor2Struct.synchronization.velocity;
+					motor2Struct.direction = LEFT;
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor2Struct.synchronization.method & 0b1 == 1)
+				{
+					/*Stop with index pulse*/
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+		}
+		/*Rising edge*/
+		if(GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_3) == 1)
+		{
+			/*Motor direction is left*/
+			if(motor2Struct.direction == LEFT)
+			{
+				if(motor2Struct.synchronization.method & 0b11 == 0b10)
+				{
+					/*Stop with index pulse*/
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor2Struct.synchronization.method & 0b11 == 0b11)
+				{
+					/*Change direction and stop with index pulse*/
+					motor2Struct.velocityTarget = motor2Struct.synchronization.velocity;
+					motor2Struct.direction = RIGHT;
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+			/*Motor direction is right*/
+			else if(motor2Struct.direction == RIGHT)
+			{
+				if(motor2Struct.synchronization.method & 0b11 == 0)
+				{
+					/*Change direction and stop with index pulse*/
+					motor2Struct.velocityTarget = (-1) *
+							motor2Struct.synchronization.velocity;
+					motor2Struct.direction = LEFT;
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor2Struct.synchronization.method & 0b11 == 0b01)
+				{
+					/*Stop with index pulse*/
+					motor2Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+		}
 	}
 
+
+/////*RIGHT ENDSTOP - MOTOR2*////////////////////
 	if(status & GPIO_INT_PIN_4 == GPIO_INT_PIN_4)
 	{
+		/*Falling edge - endstop is pushed*/
+		if(GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_4) == 0)
+		{
+			/*Synchronization is enabled*/
+			if(motor2Struct.synchronization.isEnable)
+			{
+				/*Change motor direction*/
+				if(motor2Struct.direction == RIGHT)
+				{
+					motor2Struct.velocityTarget = (-1) *
+							motor2Struct.synchronization.velocity;
+					motor2Struct.direction = LEFT;
+				}
+			}
 
+			/*Synchronization isn't enabled*/
+			else
+			{
+				motor2Struct.velocityTarget = 0;
+			}
+		}
 	}
 
+
+/////*FIRST SAFETY INPUT*////////////////////////
 	if(status & GPIO_INT_PIN_5 == GPIO_INT_PIN_5)
 	{
 
 	}
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+// GPIOB external interrupt handler
+///////////////////////////////////////////////////////////////////////////////
 void PortBIntHandler(void)
 {
 	uint32_t status = 0;
@@ -167,17 +297,99 @@ void PortBIntHandler(void)
 	status = GPIOIntStatus(GPIO_PORTB_BASE, true);
 	GPIOIntClear(GPIO_PORTB_BASE, status);
 
+
+/////*OVERCURRENT OR OVERVOLTAGE - MOTOR1*///////
 	if(status & GPIO_INT_PIN_0 == GPIO_INT_PIN_0)
 	{
 
 	}
 
+
+/////*HOME SWITCH - MOTOR1*//////////////////////
 	if(status & GPIO_INT_PIN_3 == GPIO_INT_PIN_3)
 	{
-
+		/*Falling edge*/
+		if(GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_3) == 0)
+		{
+			/*Motor direction is left*/
+			if(motor1Struct.direction == LEFT)
+			{
+				if(motor1Struct.synchronization.method & 0b1 == 0)
+				{
+					/*Stop with index pulse*/
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor1Struct.synchronization.method & 0b1 == 1)
+				{
+					/*Change direction and stop with index pulse*/
+					motor1Struct.velocityTarget = motor1Struct.synchronization.velocity;
+					motor1Struct.direction = RIGHT;
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+			/*Motor direction is right*/
+			else if(motor1Struct.direction == RIGHT)
+			{
+				if(motor1Struct.synchronization.method & 0b1 == 0)
+				{
+					/*Change direction and stop with index pulse*/
+					motor1Struct.velocityTarget = (-1) *
+							motor1Struct.synchronization.velocity;
+					motor1Struct.direction = LEFT;
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor1Struct.synchronization.method & 0b1 == 1)
+				{
+					/*Stop with index pulse*/
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+		}
+		/*Rising edge*/
+		if(GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_3) == 1)
+		{
+			/*Motor direction is left*/
+			if(motor1Struct.direction == LEFT)
+			{
+				if(motor1Struct.synchronization.method & 0b11 == 0b10)
+				{
+					/*Stop with index pulse*/
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor1Struct.synchronization.method & 0b11 == 0b11)
+				{
+					/*Change direction and stop with index pulse*/
+					motor1Struct.velocityTarget = motor1Struct.synchronization.velocity;
+					motor1Struct.direction = RIGHT;
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+			/*Motor direction is right*/
+			else if(motor1Struct.direction == RIGHT)
+			{
+				if(motor1Struct.synchronization.method & 0b11 == 0)
+				{
+					/*Change direction and stop with index pulse*/
+					motor1Struct.velocityTarget = (-1) *
+							motor1Struct.synchronization.velocity;
+					motor1Struct.direction = LEFT;
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+				if(motor1Struct.synchronization.method & 0b11 == 0b01)
+				{
+					/*Stop with index pulse*/
+					motor1Struct.synchronization.stopAfterIndex = 1;
+				}
+			}
+		}
 	}
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+// GPIOC external interrupt handler
+///////////////////////////////////////////////////////////////////////////////
 void PortCIntHandler(void)
 {
 	uint32_t status = 0;
@@ -185,16 +397,51 @@ void PortCIntHandler(void)
 	status = GPIOIntStatus(GPIO_PORTC_BASE, true);
 	GPIOIntClear(GPIO_PORTC_BASE, status);
 
+
+/////*RIGHT ENDSTOP - MOTOR1*////////////////////
 	if(status & GPIO_INT_PIN_4 == GPIO_INT_PIN_4)
 	{
+		/*Falling edge - endstop is pushed*/
+		if(GPIOPinRead(GPIO_PORTC_BASE, GPIO_PIN_4) == 0)
+		{
+			/*Synchronization is enabled*/
+			if(motor1Struct.synchronization.isEnable)
+			{
+				/*Change motor direction*/
+				if(motor1Struct.direction == RIGHT)
+				{
+					motor1Struct.velocityTarget = (-1) *
+							motor1Struct.synchronization.velocity;
+					motor1Struct.direction = LEFT;
+				}
+			}
 
+			/*Synchronization isn't enabled*/
+			else
+			{
+				motor1Struct.velocityTarget = 0;
+			}
+		}
 	}
+
+
+/////*INDEX PULSE - MOTOR2*//////////////////////
 	if(status & GPIO_INT_PIN_7 == GPIO_INT_PIN_7)
 	{
-
+		if(motor2Struct.synchronization.stopAfterIndex)
+		{
+			motor2Struct.synchronization.isEnable = 0;
+			//STOP!
+			//zeruj enkoder
+		}
 	}
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+// GPIOD external interrupt handler
+///////////////////////////////////////////////////////////////////////////////
 void PortDIntHandler(void)
 {
 	uint32_t status = 0;
@@ -202,12 +449,19 @@ void PortDIntHandler(void)
 	status = GPIOIntStatus(GPIO_PORTD_BASE, true);
 	GPIOIntClear(GPIO_PORTD_BASE, status);
 
+
+/////*SECOND SAFETY INPUT*///////////////////////
 	if(status & GPIO_INT_PIN_3 == GPIO_INT_PIN_3)
 	{
 
 	}
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+// GPIOF external interrupt handler
+///////////////////////////////////////////////////////////////////////////////
 void PortFIntHandler(void)
 {
 	uint32_t status = 0;
@@ -215,17 +469,48 @@ void PortFIntHandler(void)
 	status = GPIOIntStatus(GPIO_PORTF_BASE, true);
 	GPIOIntClear(GPIO_PORTF_BASE, status);
 
+
+/////*DRIVER OVERTEMPERATURE - MOTOR1*///////////
 	if(status & GPIO_INT_PIN_1 == GPIO_INT_PIN_1)
 	{
 
 	}
 
+
+/////*LEFT ENDSTOP - MOTOR1*/////////////////////
 	if(status & GPIO_INT_PIN_3 == GPIO_INT_PIN_3)
 	{
+		/*Falling edge - endstop is pushed*/
+		if(GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_3) == 0)
+		{
+			/*Synchronization is enabled*/
+			if(motor1Struct.synchronization.isEnable)
+			{
+				/*Change motor direction*/
+				if(motor1Struct.direction == LEFT)
+				{
+					motor1Struct.velocityTarget = motor1Struct.synchronization.velocity;
+					motor1Struct.direction = RIGHT;
+				}
+			}
 
+			/*Synchronization isn't enabled*/
+			else
+			{
+				motor1Struct.velocityTarget = 0;
+			}
+		}
 	}
+
+
+/////*INDEX PULSE - MOTOR1*//////////////////////
 	if((status & GPIO_INT_PIN_4) == GPIO_INT_PIN_4)
 	{
-
+		if(motor1Struct.synchronization.stopAfterIndex)
+		{
+			motor1Struct.synchronization.isEnable = 0;
+			//STOP!
+			//zeruj enkoder
+		}
 	}
 }

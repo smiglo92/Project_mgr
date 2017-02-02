@@ -62,7 +62,7 @@ int main()
 
 	mb_PID_init();
 
-	initExternalInterrupts();
+	//initExternalInterrupts();
 
 	//Enable ADC to current measure and input voltage
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +92,7 @@ int main()
 
 //	IntRegister(INT_ADC0SS1_TM4C123, ADC0_Handler);
 //	IntEnable(INT_ADC0SS1_TM4C123);
-//	IntRegister(INT_ADC1SS1_TM4C123, ADC1_Handler);
+//	IntRegister(INT_ADC1SS1_TM4C123, ADC1_Handler);l
 //	IntEnable(INT_ADC1SS1_TM4C123);
 
 	ADCIntDisable(ADC0_BASE, 0);
@@ -236,7 +236,7 @@ int main()
 
 		if(isPid1Switch)
 		{
-			if (motor1VelocityPidIterator == 0 && isMotor1Synchronization)
+			if (motor1VelocityPidIterator == 0 && motor1Struct.synchronization.isEnable)
 			{
 				motor1Struct.velocity = (QEIVelocityGet(QEI0_BASE) * 30) * (QEIDirectionGet(QEI0_BASE));
 				motor1Struct.velocityError = (motor1Struct.velocityTarget - motor1Struct.velocity) << 10;
@@ -261,10 +261,10 @@ int main()
 				}
 			}
 
-			if (isMotor1Synchronization)
+			if (motor1Struct.synchronization.isEnable)
 				motor1Struct.currentError = (motor1Struct.currentTargetVelocityPid - motor1Struct.current) << 10;
 			else
-					motor1Struct.currentError = (motor1Struct.currentTarget - motor1Struct.current) << 10;
+				motor1Struct.currentError = (motor1Struct.currentTarget - motor1Struct.current) << 10;
 
 			motor1Struct.pwmInputPrevious = motor1Struct.pwmInput;
 			motor1Struct.pwmInputUnlimited = motor1CurrentPid.state[2];
@@ -296,7 +296,7 @@ int main()
 
 		if(isPid2Switch)
 		{
-			if (motor2VelocityPidIterator == 0 && isMotor2Synchronization)
+			if (motor2VelocityPidIterator == 0 && motor2Struct.synchronization.isEnable)
 			{
 				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) * (QEIDirectionGet(QEI1_BASE));
 				motor2Struct.velocityError = (motor2Struct.velocityTarget - motor2Struct.velocity) << 10;
@@ -321,7 +321,7 @@ int main()
 				}
 			}
 
-			if (isMotor2Synchronization)
+			if (motor2Struct.synchronization.isEnable)
 				motor2Struct.currentError = (motor2Struct.currentTargetVelocityPid - motor2Struct.current) << 10;
 			else
 				motor2Struct.currentError = (motor2Struct.currentTarget - motor2Struct.current) << 10;
@@ -375,8 +375,6 @@ int main()
 		isTerminalSend = 0;
 
 		zmienna_pomocnicza++;
-//		isMotor1Synchronization = 1;
-//		isMotor2Synchronization = 1;
 
 		if(zmienna_pomocnicza == 300)
 		{
@@ -392,6 +390,9 @@ int main()
 //			}
 			zmienna_pomocnicza = 0;
 		}
+
+		motor1Struct.synchronization.isEnable = 1;
+
 		}
 
 	}
