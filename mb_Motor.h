@@ -23,7 +23,9 @@ typedef struct {
 typedef struct {
 	volatile int32_t current;
 	volatile int32_t currentTarget;
-	volatile int32_t currentTarget2;
+	volatile int32_t currentTargetVelocityPid;
+	volatile int32_t currentTargetVelocityPidPrevious;
+	volatile int32_t currentTargetVelocityPidUnlimited;
 	volatile int32_t currentError;
 	MbMotorPid currentPid;
 	volatile int32_t position;
@@ -32,6 +34,8 @@ typedef struct {
 	volatile int32_t velocityError;
 	MbMotorPid velocityPid;
 	volatile int32_t pwmInput;
+	volatile int32_t pwmInputPrevious;
+	volatile int32_t pwmInputUnlimited;
 }MbMotorStruct;
 
 

@@ -115,7 +115,7 @@ void ADC1_Handler(void) {
     ADCSequenceDataGet(ADC1_BASE, 0, adc1_value);
 
 
-    motor2Struct.current = (int32_t)(adc1_value[0])*1078605/4037670 - 4;
+    motor2Struct.current = (int32_t)(adc1_value[0])*1078605/4037670;// - 4;
     if(motor2Struct.current < 0)
     	motor2Struct.current = 0;
     motor2Struct.current *= QEIDirectionGet(QEI1_BASE);

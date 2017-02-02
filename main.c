@@ -3,8 +3,6 @@
 
 MbMotorStruct motor1Struct, motor2Struct;
 
-//TODO - SYNCHRONIZACJA
-
 arm_pid_instance_q31 motor1CurrentPid, motor2CurrentPid;
 
 arm_pid_instance_q31 motor1VelocityPid, motor2VelocityPid;
@@ -227,7 +225,7 @@ int main()
 	arm_pid_init_q31(&motor2VelocityPid, 1);
 
 	motor2VelocityPid.state[2] = 0;
-	motor2Struct.velocityTarget = 3000;
+	motor2Struct.velocityTarget = 2000;
 	motor2Struct.velocityError = 0;
 
 	ui32ConfigAdc0 = ADCClockConfigGet(ADC0_BASE, &ui32ClockDivAdc0);
@@ -235,95 +233,6 @@ int main()
 
 	while (1)
 	{
-		if(isPid2Switch)
-		{
-			if (motor2VelocityPidIterator == 0 && isMotor2Synchronization)
-			{
-				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) * (QEIDirectionGet(QEI1_BASE));
-				motor2Struct.velocityError = (motor2Struct.velocityTarget - motor2Struct.velocity) << 10;
-
-				motor2Struct.currentTarget2 = arm_pid_q31(&motor2VelocityPid, motor2Struct.velocityError);
-
-				if(motor2Struct.currentTarget2 > 150)
-				{
-					motor2Struct.currentTarget2 = 150;
-					if(motor2Struct.velocityPid.antiwindup == 0)
-					{
-						motor2VelocityPid.A0 -= motor2VelocityPid.Ki;
-						motor2VelocityPid.Ki = 0;
-						motor2Struct.velocityPid.antiwindup = 1;
-					}
-				}
-				else if(motor2Struct.currentTarget2 < -150)
-				{
-					motor2Struct.currentTarget2 = -150;
-					if(motor2Struct.velocityPid.antiwindup == 0)
-					{
-						motor2VelocityPid.A0 -= motor2VelocityPid.Ki;
-						motor2VelocityPid.Ki = 0;
-						motor2Struct.velocityPid.antiwindup = 1;
-					}
-				}
-				else
-				{
-					if(motor2Struct.velocityPid.antiwindup == 1)
-					{
-						motor2Struct.velocityPid.antiwindup = 0;
-						motor2VelocityPid.Ki = motor2Struct.velocityPid.ti;
-						motor2VelocityPid.A0 += motor2VelocityPid.Ki;
-					}
-				}
-			}
-
-//			Zrobiæ sprawdzanie zadanego pr¹du który bêdzie przychodzi³ z komputera
-
-			if (isMotor2Synchronization)
-				motor2Struct.currentError = (motor2Struct.currentTarget2 - motor2Struct.current) << 10;
-			else
-				motor2Struct.currentError = (motor2Struct.currentTarget - motor2Struct.current) << 10;
-
-			motor2Struct.pwmInput = arm_pid_q31(&motor2CurrentPid, motor2Struct.currentError);
-
-			if(motor2Struct.pwmInput > 2000)
-			{
-				motor2Struct.pwmInput = 2000;
-				if(motor2Struct.currentPid.antiwindup == 0)
-				{
-					motor2CurrentPid.A0 -= motor2CurrentPid.Ki;
-					motor2CurrentPid.Ki = 0;
-					motor2Struct.currentPid.antiwindup = 1;
-				}
-			}
-			else if(motor2Struct.pwmInput < -2000)
-			{
-				motor2Struct.pwmInput = -2000;
-				if(motor2Struct.currentPid.antiwindup == 0)
-				{
-					motor2CurrentPid.A0 -= motor2CurrentPid.Ki;
-					motor2CurrentPid.Ki = 0;
-					motor2Struct.currentPid.antiwindup = 1;
-				}
-			}
-			else
-			{
-				if(motor2Struct.currentPid.antiwindup == 1)
-				{
-					motor2Struct.currentPid.antiwindup = 0;
-					motor2CurrentPid.Ki = motor2Struct.currentPid.ti;
-					motor2CurrentPid.A0 += motor2CurrentPid.Ki;
-				}
-			}
-
-			mb_Motor_Set_Pulse_Width(MOTOR2, motor2Struct.pwmInput);
-
-			motor2Struct.position = QEIPositionGet(QEI1_BASE);
-
-			motor2VelocityPidIterator++;
-			if(motor2VelocityPidIterator == 19) motor2VelocityPidIterator = 0;
-
-			isPid2Switch = 0;
-			mb_LED_Off(LED1);
-		}
 
 		if(isPid1Switch)
 		{
@@ -332,74 +241,46 @@ int main()
 				motor1Struct.velocity = (QEIVelocityGet(QEI0_BASE) * 30) * (QEIDirectionGet(QEI0_BASE));
 				motor1Struct.velocityError = (motor1Struct.velocityTarget - motor1Struct.velocity) << 10;
 
-				motor1Struct.currentTarget2 = arm_pid_q31(&motor1VelocityPid, motor1Struct.velocityError);
+				motor1Struct.currentTargetVelocityPidPrevious = motor1Struct.currentTargetVelocityPid;
+				motor1Struct.currentTargetVelocityPidUnlimited = motor1VelocityPid.state[2];
 
-				if(motor1Struct.currentTarget2 > 200)
+				motor1Struct.currentTargetVelocityPid = arm_pid_q31(&motor1VelocityPid, motor1Struct.velocityError);
+
+				motor1VelocityPid.state[2] += (motor1Struct.currentTargetVelocityPidPrevious -
+						motor1Struct.currentTargetVelocityPidUnlimited);
+				motor1Struct.currentTargetVelocityPid += (motor1Struct.currentTargetVelocityPidPrevious -
+						motor1Struct.currentTargetVelocityPidUnlimited);
+
+				if(motor1VelocityPid.state[2] > 100)
 				{
-					motor1Struct.currentTarget2 = 200;
-					if(motor1Struct.velocityPid.antiwindup == 0)
-					{
-						motor1VelocityPid.A0 -= motor1VelocityPid.Ki;
-						motor1VelocityPid.Ki = 0;
-						motor1Struct.velocityPid.antiwindup = 1;
-					}
+					motor1Struct.currentTargetVelocityPid = 100;
 				}
-				else if(motor1Struct.currentTarget2 < -200)
+				else if(motor1VelocityPid.state[2] < -100)
 				{
-					motor1Struct.currentTarget2 = -200;
-					if(motor1Struct.velocityPid.antiwindup == 0)
-					{
-						motor1VelocityPid.A0 -= motor1VelocityPid.Ki;
-						motor1VelocityPid.Ki = 0;
-						motor1Struct.velocityPid.antiwindup = 1;
-					}
-				}
-				else
-				{
-					if(motor1Struct.velocityPid.antiwindup == 1)
-					{
-						motor1Struct.velocityPid.antiwindup = 0;
-						motor1VelocityPid.Ki = motor1Struct.velocityPid.ti;
-						motor1VelocityPid.A0 += motor1VelocityPid.Ki;
-					}
+					motor1Struct.currentTargetVelocityPid = -100;
 				}
 			}
 
 			if (isMotor1Synchronization)
-				motor1Struct.currentError = (motor1Struct.currentTarget2 - motor1Struct.current) << 10;
+				motor1Struct.currentError = (motor1Struct.currentTargetVelocityPid - motor1Struct.current) << 10;
 			else
-				motor1Struct.currentError = (motor1Struct.currentTarget - motor1Struct.current) << 10;
+					motor1Struct.currentError = (motor1Struct.currentTarget - motor1Struct.current) << 10;
+
+			motor1Struct.pwmInputPrevious = motor1Struct.pwmInput;
+			motor1Struct.pwmInputUnlimited = motor1CurrentPid.state[2];
 
 			motor1Struct.pwmInput = arm_pid_q31(&motor1CurrentPid, motor1Struct.currentError);
 
-			if(motor1Struct.pwmInput > 2000)
+			motor1CurrentPid.state[2] += (motor1Struct.pwmInputPrevious - motor1Struct.pwmInputUnlimited) >> 3;
+			motor1Struct.pwmInput += (motor1Struct.pwmInputPrevious - motor1Struct.pwmInputUnlimited) >> 3;
+
+			if(motor1CurrentPid.state[2] > 2000)
 			{
 				motor1Struct.pwmInput = 2000;
-				if(motor1Struct.currentPid.antiwindup == 0)
-				{
-					motor1CurrentPid.A0 -= motor1CurrentPid.Ki;
-					motor1CurrentPid.Ki = 0;
-					motor1Struct.currentPid.antiwindup = 1;
-				}
 			}
-			else if(motor1Struct.pwmInput < -2000)
+			else if(motor1CurrentPid.state[2] < -2000)
 			{
 				motor1Struct.pwmInput = -2000;
-				if(motor1Struct.currentPid.antiwindup == 0)
-				{
-					motor1CurrentPid.A0 -= motor1CurrentPid.Ki;
-					motor1CurrentPid.Ki = 0;
-					motor1Struct.currentPid.antiwindup = 1;
-				}
-			}
-			else
-			{
-				if(motor1Struct.currentPid.antiwindup == 1)
-				{
-					motor1Struct.currentPid.antiwindup = 0;
-					motor1CurrentPid.Ki = motor1Struct.currentPid.ti;
-					motor1CurrentPid.A0 += motor1CurrentPid.Ki;
-				}
 			}
 
 			mb_Motor_Set_Pulse_Width(MOTOR1, motor1Struct.pwmInput);
@@ -410,6 +291,66 @@ int main()
 			if(motor1VelocityPidIterator == 19) motor1VelocityPidIterator = 0;
 
 			isPid1Switch = 0;
+			mb_LED_Off(LED1);
+		}
+
+		if(isPid2Switch)
+		{
+			if (motor2VelocityPidIterator == 0 && isMotor2Synchronization)
+			{
+				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) * (QEIDirectionGet(QEI1_BASE));
+				motor2Struct.velocityError = (motor2Struct.velocityTarget - motor2Struct.velocity) << 10;
+
+				motor2Struct.currentTargetVelocityPidPrevious = motor2Struct.currentTargetVelocityPid;
+				motor2Struct.currentTargetVelocityPidUnlimited = motor2VelocityPid.state[2];
+
+				motor2Struct.currentTargetVelocityPid = arm_pid_q31(&motor2VelocityPid, motor2Struct.velocityError);
+
+				motor2VelocityPid.state[2] += (motor2Struct.currentTargetVelocityPidPrevious -
+						motor2Struct.currentTargetVelocityPidUnlimited);
+				motor2Struct.currentTargetVelocityPid += (motor2Struct.currentTargetVelocityPidPrevious -
+						motor2Struct.currentTargetVelocityPidUnlimited);
+
+				if(motor2VelocityPid.state[2] > 150)
+				{
+					motor2Struct.currentTargetVelocityPid = 150;
+				}
+				else if(motor2VelocityPid.state[2] < -150)
+				{
+					motor2Struct.currentTargetVelocityPid = -150;
+				}
+			}
+
+			if (isMotor2Synchronization)
+				motor2Struct.currentError = (motor2Struct.currentTargetVelocityPid - motor2Struct.current) << 10;
+			else
+				motor2Struct.currentError = (motor2Struct.currentTarget - motor2Struct.current) << 10;
+
+			motor2Struct.pwmInputPrevious = motor2Struct.pwmInput;
+			motor2Struct.pwmInputUnlimited = motor2CurrentPid.state[2];
+
+			motor2Struct.pwmInput = arm_pid_q31(&motor2CurrentPid, motor2Struct.currentError);
+
+			motor2CurrentPid.state[2] += (motor2Struct.pwmInputPrevious - motor2Struct.pwmInputUnlimited) >> 3;
+			motor2Struct.pwmInput += (motor2Struct.pwmInputPrevious - motor2Struct.pwmInputUnlimited) >> 3;
+
+			if(motor2CurrentPid.state[2] > 700)
+			{
+				motor2Struct.pwmInput = 700;
+			}
+			else if(motor2CurrentPid.state[2] < -700)
+			{
+				motor2Struct.pwmInput = -700;
+			}
+
+			mb_Motor_Set_Pulse_Width(MOTOR2, motor2Struct.pwmInput);
+
+			motor2Struct.position = QEIPositionGet(QEI1_BASE);
+
+			motor2VelocityPidIterator++;
+			if(motor2VelocityPidIterator == 19) motor2VelocityPidIterator = 0;
+
+			isPid2Switch = 0;
 			mb_LED_Off(LED1);
 		}
 
@@ -439,16 +380,16 @@ int main()
 
 		if(zmienna_pomocnicza == 300)
 		{
-			if(motor1Struct.velocityTarget == 500)
-			{
-				motor1Struct.velocityTarget = -500;
-//				motor2Struct.velocityTarget = -500;
-			}
-			else
-			{
-				motor1Struct.velocityTarget = 500;
-//				motor2Struct.velocityTarget = 500;
-			}
+//			if(motor1Struct.velocityTarget == 500)
+//			{
+//				motor1Struct.velocityTarget = -500;
+////				motor2Struct.velocityTarget = -500;
+//			}
+//			else
+//			{
+//				motor1Struct.velocityTarget = 500;
+////				motor2Struct.velocityTarget = 500;
+//			}
 			zmienna_pomocnicza = 0;
 		}
 		}
