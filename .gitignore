@@ -1,0 +1,8 @@
+# ignoruj wszystkie pliki znajdujace sie w katalogu .launches/
+.launches/
+
+#ignoruj wszystkie pliki znajdujace sie w katalogu Debug/
+Debug/
+
+#ignoruj wszystkie pliki znajdujace sie w katalogu Release/
+Release/
