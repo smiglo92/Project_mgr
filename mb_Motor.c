@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "mb_Motor.h"
+
 #include "inc/hw_memmap.h"
 #include "inc/hw_gpio.h"
 #include "inc/hw_types.h"
@@ -38,6 +38,8 @@
 #include "driverlib/gpio.h"
 #include "driverlib/pwm.h"
 #include "driverlib/interrupt.h"
+
+#include "mb_Motor.h"
 #include "interrupts.h"
 
 static const uint32_t mbMotorPeriphPWM[] = {SYSCTL_PERIPH_PWM1, SYSCTL_PERIPH_PWM0};

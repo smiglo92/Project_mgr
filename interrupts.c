@@ -6,6 +6,9 @@
  */
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
+
+#include "arm_math.h"
 #include "inc/hw_gpio.h"
 #include "inc/hw_types.h"
 #include "inc/hw_ints.h"
@@ -21,9 +24,6 @@
 #include "driverlib/adc.h"
 #include "driverlib/timer.h"
 #include "driverlib/interrupt.h"
-
-#include <math.h>
-#include "arm_math.h"
 
 #include "mb_Motor.h"
 #include "mb_LED.h"
@@ -80,6 +80,10 @@ void Timer0IntHandler(void)
 void ADC0_Handler(void) {
 
 	volatile uint8_t i;
+	uint32_t adc0_value[1];
+	static volatile int32_t currentMotor1[8];
+	static volatile uint8_t currentMotorIter;
+	volatile int32_t currentMotorAvg;
 
     while (!ADCIntStatus(ADC0_BASE, 0, false));
 
@@ -92,8 +96,9 @@ void ADC0_Handler(void) {
     	zeroCurrentAdcIter++;
     }
     else
-//    	motor1Struct.current = ((int32_t)(adc0_value[0])-(int32_t)zeroCurrentAdc)*100000/14978;
-    currentMotor1[currentMotorIter] = ((int32_t)(adc0_value[0])-(int32_t)zeroCurrentAdc)*100000/14978;
+//  motor1Struct.current = ((int32_t)(adc0_value[0])-(int32_t)zeroCurrentAdc)*100000/14978;
+    currentMotor1[currentMotorIter] = ((int32_t)(adc0_value[0])-(int32_t)zeroCurrentAdc)*
+	                                  100000/14978;
     currentMotorIter++;
     if(currentMotorIter == 8)
     	currentMotorIter = 0;
@@ -108,6 +113,8 @@ void ADC0_Handler(void) {
 }
 
 void ADC1_Handler(void) {
+
+	uint32_t adc1_value[2];
 
     while (!ADCIntStatus(ADC1_BASE, 0, false));
 

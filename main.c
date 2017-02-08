@@ -1,18 +1,6 @@
 
 #include "main.h"
 
-MbMotorStruct motor1Struct, motor2Struct;
-
-arm_pid_instance_q31 motor1CurrentPid, motor2CurrentPid;
-
-arm_pid_instance_q31 motor1VelocityPid, motor2VelocityPid;
-
-uint32_t ui32ConfigAdc0;
-uint32_t ui32ConfigAdc1;
-
-uint32_t ui32ClockDivAdc0;
-uint32_t ui32ClockDivAdc1;
-
 uint16_t zmienna_pomocnicza;
 
 int main()
@@ -24,7 +12,8 @@ int main()
 
 	//Set the system clock to 80Mhz
 	/////////////////////////////////////////////////////////////////////////////////////
-	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+	SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
+			      SYSCTL_XTAL_16MHZ);
 
 	//Enable motors
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -79,10 +68,10 @@ int main()
 	ADCHardwareOversampleConfigure(ADC0_BASE, 32);
 	ADCHardwareOversampleConfigure(ADC1_BASE, 0);
 
-	ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0|ADC_CTL_IE|ADC_CTL_END);
+	ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH0 | ADC_CTL_IE | ADC_CTL_END);
 
 	ADCSequenceStepConfigure(ADC1_BASE, 0, 0, ADC_CTL_CH1);
-	ADCSequenceStepConfigure(ADC1_BASE, 0, 1, ADC_CTL_CH2|ADC_CTL_IE|ADC_CTL_END);
+	ADCSequenceStepConfigure(ADC1_BASE, 0, 1, ADC_CTL_CH2 | ADC_CTL_IE | ADC_CTL_END);
 
 	ADCSequenceEnable(ADC0_BASE, 0);
 	ADCSequenceEnable(ADC1_BASE, 0);
@@ -154,8 +143,10 @@ int main()
 	GPIOPinConfigure(GPIO_PC5_PHA1);
 	GPIOPinConfigure(GPIO_PC6_PHB1);
 
-	QEIConfigure(QEI0_BASE, (QEI_CONFIG_CAPTURE_A_B|QEI_CONFIG_NO_RESET|QEI_CONFIG_QUADRATURE|QEI_CONFIG_NO_SWAP), 2000000);
-	QEIConfigure(QEI1_BASE, (QEI_CONFIG_CAPTURE_A_B|QEI_CONFIG_NO_RESET|QEI_CONFIG_QUADRATURE|QEI_CONFIG_NO_SWAP), 2000000);
+	QEIConfigure(QEI0_BASE, (QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET |
+			    QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP), 2000000);
+	QEIConfigure(QEI1_BASE, (QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET |
+			    QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP), 2000000);
 
 	QEIVelocityConfigure(QEI0_BASE, QEI_VELDIV_1, 80000-1);
 	QEIVelocityConfigure(QEI1_BASE, QEI_VELDIV_1, 80000-1);
@@ -228,9 +219,6 @@ int main()
 	motor2Struct.velocityTarget = 2000;
 	motor2Struct.velocityError = 0;
 
-	ui32ConfigAdc0 = ADCClockConfigGet(ADC0_BASE, &ui32ClockDivAdc0);
-	ui32ConfigAdc1 = ADCClockConfigGet(ADC1_BASE, &ui32ClockDivAdc1);
-
 	while (1)
 	{
 
@@ -238,17 +226,24 @@ int main()
 		{
 			if (motor1VelocityPidIterator == 0 && motor1Struct.synchronization.isEnable)
 			{
-				motor1Struct.velocity = (QEIVelocityGet(QEI0_BASE) * 30) * (QEIDirectionGet(QEI0_BASE));
-				motor1Struct.velocityError = (motor1Struct.velocityTarget - motor1Struct.velocity) << 10;
+				motor1Struct.velocity = (QEIVelocityGet(QEI0_BASE) * 30) *
+						                (QEIDirectionGet(QEI0_BASE));
+				motor1Struct.velocityError = (motor1Struct.velocityTarget -
+						                     motor1Struct.velocity) << 10;
 
-				motor1Struct.currentTargetVelocityPidPrevious = motor1Struct.currentTargetVelocityPid;
-				motor1Struct.currentTargetVelocityPidUnlimited = motor1VelocityPid.state[2];
+				motor1Struct.currentTargetVelocityPidPrevious =
+						motor1Struct.currentTargetVelocityPid;
+				motor1Struct.currentTargetVelocityPidUnlimited =
+						motor1VelocityPid.state[2];
 
-				motor1Struct.currentTargetVelocityPid = arm_pid_q31(&motor1VelocityPid, motor1Struct.velocityError);
+				motor1Struct.currentTargetVelocityPid = arm_pid_q31(&motor1VelocityPid,
+						                                motor1Struct.velocityError);
 
-				motor1VelocityPid.state[2] += (motor1Struct.currentTargetVelocityPidPrevious -
-						motor1Struct.currentTargetVelocityPidUnlimited);
-				motor1Struct.currentTargetVelocityPid += (motor1Struct.currentTargetVelocityPidPrevious -
+				motor1VelocityPid.state[2] +=
+						(motor1Struct.currentTargetVelocityPidPrevious -
+					    motor1Struct.currentTargetVelocityPidUnlimited);
+				motor1Struct.currentTargetVelocityPid +=
+						(motor1Struct.currentTargetVelocityPidPrevious -
 						motor1Struct.currentTargetVelocityPidUnlimited);
 
 				if(motor1VelocityPid.state[2] > 100)
@@ -262,17 +257,22 @@ int main()
 			}
 
 			if (motor1Struct.synchronization.isEnable)
-				motor1Struct.currentError = (motor1Struct.currentTargetVelocityPid - motor1Struct.current) << 10;
+				motor1Struct.currentError = (motor1Struct.currentTargetVelocityPid -
+						                    motor1Struct.current) << 10;
 			else
-				motor1Struct.currentError = (motor1Struct.currentTarget - motor1Struct.current) << 10;
+				motor1Struct.currentError = (motor1Struct.currentTarget -
+						                    motor1Struct.current) << 10;
 
 			motor1Struct.pwmInputPrevious = motor1Struct.pwmInput;
 			motor1Struct.pwmInputUnlimited = motor1CurrentPid.state[2];
 
-			motor1Struct.pwmInput = arm_pid_q31(&motor1CurrentPid, motor1Struct.currentError);
+			motor1Struct.pwmInput = arm_pid_q31(&motor1CurrentPid,
+					                           motor1Struct.currentError);
 
-			motor1CurrentPid.state[2] += (motor1Struct.pwmInputPrevious - motor1Struct.pwmInputUnlimited) >> 3;
-			motor1Struct.pwmInput += (motor1Struct.pwmInputPrevious - motor1Struct.pwmInputUnlimited) >> 3;
+			motor1CurrentPid.state[2] += (motor1Struct.pwmInputPrevious -
+					                     motor1Struct.pwmInputUnlimited) >> 3;
+			motor1Struct.pwmInput += (motor1Struct.pwmInputPrevious -
+					                 motor1Struct.pwmInputUnlimited) >> 3;
 
 			if(motor1CurrentPid.state[2] > 2000)
 			{
@@ -298,17 +298,24 @@ int main()
 		{
 			if (motor2VelocityPidIterator == 0 && motor2Struct.synchronization.isEnable)
 			{
-				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) * (QEIDirectionGet(QEI1_BASE));
-				motor2Struct.velocityError = (motor2Struct.velocityTarget - motor2Struct.velocity) << 10;
+				motor2Struct.velocity = (QEIVelocityGet(QEI1_BASE) * 30) *
+						                (QEIDirectionGet(QEI1_BASE));
+				motor2Struct.velocityError = (motor2Struct.velocityTarget -
+						                     motor2Struct.velocity) << 10;
 
-				motor2Struct.currentTargetVelocityPidPrevious = motor2Struct.currentTargetVelocityPid;
-				motor2Struct.currentTargetVelocityPidUnlimited = motor2VelocityPid.state[2];
+				motor2Struct.currentTargetVelocityPidPrevious =
+						motor2Struct.currentTargetVelocityPid;
+				motor2Struct.currentTargetVelocityPidUnlimited =
+						motor2VelocityPid.state[2];
 
-				motor2Struct.currentTargetVelocityPid = arm_pid_q31(&motor2VelocityPid, motor2Struct.velocityError);
+				motor2Struct.currentTargetVelocityPid = arm_pid_q31(&motor2VelocityPid,
+						                                motor2Struct.velocityError);
 
-				motor2VelocityPid.state[2] += (motor2Struct.currentTargetVelocityPidPrevious -
+				motor2VelocityPid.state[2] +=
+						(motor2Struct.currentTargetVelocityPidPrevious -
 						motor2Struct.currentTargetVelocityPidUnlimited);
-				motor2Struct.currentTargetVelocityPid += (motor2Struct.currentTargetVelocityPidPrevious -
+				motor2Struct.currentTargetVelocityPid +=
+						(motor2Struct.currentTargetVelocityPidPrevious -
 						motor2Struct.currentTargetVelocityPidUnlimited);
 
 				if(motor2VelocityPid.state[2] > 150)
@@ -322,17 +329,22 @@ int main()
 			}
 
 			if (motor2Struct.synchronization.isEnable)
-				motor2Struct.currentError = (motor2Struct.currentTargetVelocityPid - motor2Struct.current) << 10;
+				motor2Struct.currentError = (motor2Struct.currentTargetVelocityPid -
+						                    motor2Struct.current) << 10;
 			else
-				motor2Struct.currentError = (motor2Struct.currentTarget - motor2Struct.current) << 10;
+				motor2Struct.currentError = (motor2Struct.currentTarget -
+						                    motor2Struct.current) << 10;
 
 			motor2Struct.pwmInputPrevious = motor2Struct.pwmInput;
 			motor2Struct.pwmInputUnlimited = motor2CurrentPid.state[2];
 
-			motor2Struct.pwmInput = arm_pid_q31(&motor2CurrentPid, motor2Struct.currentError);
+			motor2Struct.pwmInput = arm_pid_q31(&motor2CurrentPid,
+					                           motor2Struct.currentError);
 
-			motor2CurrentPid.state[2] += (motor2Struct.pwmInputPrevious - motor2Struct.pwmInputUnlimited) >> 3;
-			motor2Struct.pwmInput += (motor2Struct.pwmInputPrevious - motor2Struct.pwmInputUnlimited) >> 3;
+			motor2CurrentPid.state[2] += (motor2Struct.pwmInputPrevious -
+					                     motor2Struct.pwmInputUnlimited) >> 3;
+			motor2Struct.pwmInput += (motor2Struct.pwmInputPrevious -
+					                 motor2Struct.pwmInputUnlimited) >> 3;
 
 			if(motor2CurrentPid.state[2] > 700)
 			{
@@ -391,7 +403,8 @@ int main()
 			zmienna_pomocnicza = 0;
 		}
 
-		motor1Struct.synchronization.isEnable = 1;
+//		motor1Struct.synchronization.isEnable = 1;
+//		motor2Struct.synchronization.isEnable = 1;
 
 		}
 
